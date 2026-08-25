@@ -60,13 +60,35 @@ supabase link --project-ref hbmocyetjsykqusvaevu
 # secrets (never committed)
 supabase secrets set N8N_WEBHOOK_URL="https://n8n.example.com/webhook/pull-leads"
 supabase secrets set N8N_SECRET="…"
-supabase secrets set ALLOWED_ORIGIN="https://crm.example.com,http://localhost:5173"
+supabase secrets set ALLOWED_ORIGIN="https://crm.example.com"
 
 # deploy
 supabase functions deploy pull-leads
 
 # logs
 supabase functions logs pull-leads
+```
+
+### CORS
+
+`http://localhost:5173` and `http://localhost:4173` are always allowed, so local dev works
+without any configuration. `ALLOWED_ORIGIN` **adds** production origins (comma-separated)
+rather than replacing the dev ones. An origin that isn't on the list gets no
+`Access-Control-Allow-Origin` header at all and the refusal is logged — check
+`supabase functions logs pull-leads` if a deployed front end is blocked.
+
+If you want to drop localhost in production, remove `DEV_ORIGINS` from the union in
+`allowedOrigins()`.
+
+`supabase/config.toml` sets `verify_jwt = false` for this function. That is deliberate:
+preflight `OPTIONS` requests carry no `Authorization` header, so the platform JWT check
+would reject them before the function runs and the browser would report a CORS error. The
+function authenticates every non-preflight request itself with `supabase.auth.getUser()`
+and returns 401 without a valid session, so nothing is actually unprotected. If you deploy
+without the config file, pass the flag explicitly:
+
+```bash
+supabase functions deploy pull-leads --no-verify-jwt
 ```
 
 Contract:

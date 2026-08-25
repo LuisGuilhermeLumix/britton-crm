@@ -14,27 +14,43 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const N8N_WEBHOOK_URL = Deno.env.get('N8N_WEBHOOK_URL') ?? '';
 const N8N_SECRET = Deno.env.get('N8N_SECRET') ?? '';
-/** Comma-separated list of origins allowed to call this function. */
+/** Comma-separated production origins. Dev origins are always allowed. */
 const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '';
+
+/** Vite dev server and `npm run preview`. */
+const DEV_ORIGINS = ['http://localhost:5173', 'http://localhost:4173'];
 
 const MAX_COUNT = 2000;
 
 function allowedOrigins(): string[] {
-  return ALLOWED_ORIGIN.split(',')
+  const configured = ALLOWED_ORIGIN.split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+  // Union, not replacement: an unset ALLOWED_ORIGIN still leaves local dev
+  // working instead of emitting an empty header the browser reads as missing.
+  return [...new Set([...configured, ...DEV_ORIGINS])];
 }
 
-/** Echo the origin back only when it is on the allow-list. */
+/**
+ * Reflects the caller's origin when it is on the allow-list. An origin that
+ * isn't listed gets no Access-Control-Allow-Origin at all — never an empty
+ * one, which browsers report as "no header present".
+ */
 function corsHeaders(origin: string | null): Record<string, string> {
-  const list = allowedOrigins();
-  const allow = origin && list.includes(origin) ? origin : list[0] ?? '';
-  return {
-    'Access-Control-Allow-Origin': allow,
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
+
+  const list = allowedOrigins();
+  if (origin && list.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  } else if (origin) {
+    console.warn(`CORS: origin ${origin} is not allowed. Allowed: ${list.join(', ')}`);
+  }
+  return headers;
 }
 
 function json(body: unknown, status: number, origin: string | null): Response {
@@ -53,9 +69,24 @@ interface PullBody {
 Deno.serve(async (request: Request) => {
   const origin = request.headers.get('Origin');
 
+  // Preflight first, before anything that could throw or return early —
+  // every other response below goes through json(), which always attaches
+  // the same CORS headers.
   if (request.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders(origin) });
+    return new Response(null, { status: 200, headers: corsHeaders(origin) });
   }
+
+  try {
+    return await handle(request, origin);
+  } catch (error) {
+    // An uncaught throw would return a bare 500 with no CORS headers, and the
+    // browser would show a CORS error instead of the real failure.
+    console.error('Unhandled error in pull-leads:', error);
+    return json({ error: 'Unexpected server error. Check the function logs.' }, 500, origin);
+  }
+});
+
+async function handle(request: Request, origin: string | null): Promise<Response> {
   if (request.method !== 'POST') {
     return json({ error: 'Method not allowed.' }, 405, origin);
   }
@@ -149,4 +180,4 @@ Deno.serve(async (request: Request) => {
     200,
     origin,
   );
-});
+}

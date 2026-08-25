@@ -16,3 +16,4 @@ node_modules
 
 # Claude Code local overrides (machine-specific)
 .claude/settings.local.json
+supabase/.temp/

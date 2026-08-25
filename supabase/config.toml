@@ -1,0 +1,9 @@
+project_id = "hbmocyetjsykqusvaevu"
+
+[functions.pull-leads]
+# Preflight OPTIONS requests carry no Authorization header. With the platform
+# JWT check on, the gateway rejects them with a 401 before the function runs,
+# and the browser reports that as a CORS failure. The function does its own
+# session check with supabase.auth.getUser() and returns 401 itself, so the
+# gateway check is redundant here.
+verify_jwt = false
