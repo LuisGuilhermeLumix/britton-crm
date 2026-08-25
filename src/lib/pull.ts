@@ -11,6 +11,20 @@ export interface PullRequest {
 }
 
 /**
+ * Module-level so an in-flight pull survives navigating between pages. Without
+ * it the Pull button would look idle on return and a second click would start
+ * another real, billable pull.
+ */
+let inFlight: { pullId: string; count: number } | null = null;
+
+export function getInFlightPull(): { pullId: string; count: number } | null {
+  return inFlight;
+}
+export function setInFlightPull(value: { pullId: string; count: number } | null): void {
+  inFlight = value;
+}
+
+/**
  * Calls the pull-leads Edge Function. The n8n URL and secret live on the
  * server — the browser only ever talks to Supabase.
  */
@@ -22,17 +36,16 @@ export async function startPull(request: PullRequest): Promise<PullResponse> {
   if (error) {
     // FunctionsHttpError carries the response body, which holds our message.
     const context = (error as { context?: Response }).context;
+    let detail = '';
     if (context && typeof context.json === 'function') {
       try {
         const payload = (await context.json()) as { error?: string };
-        if (payload?.error) throw new Error(payload.error);
-      } catch (parseError) {
-        if (parseError instanceof Error && parseError.message && !/JSON/i.test(parseError.message)) {
-          throw parseError;
-        }
+        if (typeof payload?.error === 'string') detail = payload.error;
+      } catch {
+        // Body wasn't JSON — fall back to the generic message below.
       }
     }
-    throw new Error(errorMessage(error, 'The pull service did not respond.'));
+    throw new Error(detail || errorMessage(error, 'The pull service did not respond.'));
   }
 
   if (!data || !data.pull_id) {

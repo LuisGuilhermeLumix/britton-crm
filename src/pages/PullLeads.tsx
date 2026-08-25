@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Checkbox } from '../components/Checkbox';
 import { Skeleton } from '../components/Skeleton';
 import { PRICE_PER_LEAD, QTY_STEP, QUICK_QTY } from '../lib/constants';
 import { longDate, money, timeOfDay } from '../lib/format';
-import { startPull, waitForPull } from '../lib/pull';
+import { getInFlightPull, setInFlightPull, startPull, waitForPull } from '../lib/pull';
 import { errorMessage } from '../lib/supabase';
 import { useData } from '../providers/DataProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -31,8 +31,7 @@ export function PullLeads() {
   const [progress, setProgress] = useState(0);
   const [failure, setFailure] = useState<string | null>(null);
 
-  const abortRef = useRef<AbortController | null>(null);
-  useEffect(() => () => abortRef.current?.abort(), []);
+  const resumed = useRef(false);
 
   const count = qty ?? 0;
   const cost = count * PRICE_PER_LEAD;
@@ -48,45 +47,70 @@ export function PullLeads() {
     return () => window.clearInterval(timer);
   }, [status]);
 
-  async function handlePull() {
-    if (!count || status === 'running') return;
+  /** Waits for a pull that has already been handed to n8n. */
+  const awaitPull = useCallback(
+    async (pullId: string, requested: number) => {
+      setInFlightPull({ pullId, count: requested });
+      try {
+        const row = await waitForPull(pullId);
+        setProgress(100);
+        // Price the client sees is always leads × $0.40, never the view's cost_usd.
+        toast.success(`${row.leads} leads pulled · ${money(row.leads * PRICE_PER_LEAD)}`);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
+        // Refresh Recent pulls and invalidate the leads cache the other pages read.
+        await refreshAll();
+        setStatus('idle');
+        setProgress(0);
+      } catch (error) {
+        const message = errorMessage(error, 'The pull could not be completed.');
+        setFailure(message);
+        setStatus('failed');
+        toast.error(message);
+        // The pull may have partially landed; make sure history is current.
+        void refreshPulls();
+      } finally {
+        setInFlightPull(null);
+      }
+    },
+    [refreshAll, refreshPulls, toast],
+  );
+
+  /** Reattach to a pull that was still running when we navigated away. */
+  useEffect(() => {
+    if (resumed.current) return;
+    resumed.current = true;
+    const active = getInFlightPull();
+    if (!active) return;
+    setQty(active.count);
+    setStatus('running');
+    setProgress(40);
+    void awaitPull(active.pullId, active.count);
+  }, [awaitPull]);
+
+  async function handlePull() {
+    if (!count || status === 'running' || getInFlightPull()) return;
 
     setStatus('running');
     setFailure(null);
     setPhase(0);
     setProgress(8);
 
+    let response;
     try {
-      const response = await startPull({
+      response = await startPull({
         count,
         solar: solarOnly ? 'solar' : null,
         stories: twoStoryOnly ? 'two-story' : null,
       });
-
-      const row = await waitForPull(response.pull_id, { signal: controller.signal });
-
-      setProgress(100);
-      // Price the client sees is always leads × $0.40, never the view's cost_usd.
-      toast.success(`${row.leads} leads pulled · ${money(row.leads * PRICE_PER_LEAD)}`);
-
-      // Refresh Recent pulls and invalidate the leads cache the other pages read.
-      await refreshAll();
-      setStatus('idle');
-      setProgress(0);
     } catch (error) {
-      if (controller.signal.aborted) return;
-      const message = errorMessage(error, 'The pull could not be completed.');
+      const message = errorMessage(error, 'The pull could not be started.');
       setFailure(message);
       setStatus('failed');
       toast.error(message);
-      // The pull may have partially landed; make sure history is current.
-      void refreshPulls();
-    } finally {
-      abortRef.current = null;
+      return;
     }
+
+    await awaitPull(response.pull_id, response.requested || count);
   }
 
   function updateQty(next: number) {
