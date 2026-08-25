@@ -50,7 +50,8 @@ export function PullLeads() {
       try {
         const row = await waitForPull(pullId);
         setProgress(100);
-        // Price the client sees is always leads × $0.40, never the view's cost_usd.
+        // Price the client sees is always leads × PRICE_PER_LEAD, never the
+        // view's cost_usd.
         toast.success(`${row.leads} leads pulled · ${money(row.leads * PRICE_PER_LEAD)}`);
 
         // Refresh Recent pulls and invalidate the leads cache the other pages read.
@@ -189,7 +190,7 @@ export function PullLeads() {
               {money(cost)}
             </div>
             <p className="text-small" style={{ marginTop: 6 }}>
-              {count} leads × $0.40
+              {count} leads × {money(PRICE_PER_LEAD)}
             </p>
           </div>
 

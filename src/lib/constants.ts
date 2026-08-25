@@ -1,7 +1,11 @@
 import type { Stage } from './types';
 
-/** Price shown to the client. Never derived from ut_v_pulls.cost_usd. */
-export const PRICE_PER_LEAD = 0.4;
+/**
+ * Price shown to the client, in USD. The single source of truth: every figure
+ * on screen is `quantity × PRICE_PER_LEAD`, never ut_v_pulls.cost_usd, which is
+ * the supplier cost and must not surface in the UI.
+ */
+export const PRICE_PER_LEAD = 0.2;
 
 export const QUICK_QTY = [25, 50, 100, 250];
 export const QTY_STEP = 25;

@@ -133,7 +133,7 @@ export function Dashboard() {
       <section className="info-strip">
         <div className="info-item">
           <span className="label">Cost per lead</span>
-          <span className="value">$0.40</span>
+          <span className="value">{money(PRICE_PER_LEAD)}</span>
         </div>
         <div className="info-item">
           <span className="label">Spend in period</span>

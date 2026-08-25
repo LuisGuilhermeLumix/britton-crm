@@ -158,7 +158,8 @@ The queries use `select('*')`, so new view columns arrive without a query change
 
 ### Pricing
 
-The client price is always `leads × $0.40`, computed in the app. `ut_v_pulls.cost_usd` is
+The client price is always `leads × PRICE_PER_LEAD` (currently `$0.20`), computed in the
+app from the single constant in `src/lib/constants.ts`. `ut_v_pulls.cost_usd` is
 the internal cost and is never displayed.
 
 ---
