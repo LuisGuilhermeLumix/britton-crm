@@ -1,7 +1,7 @@
 import type { DragEvent } from 'react';
 import type { LeadRow } from '../lib/types';
 import { isTwoStory } from '../lib/filters';
-import { phoneDisplay, shortDate, shortValue } from '../lib/format';
+import { dateTime, phoneDisplay, shortValue } from '../lib/format';
 import { LeadTags } from './LeadTags';
 
 interface Props {
@@ -35,7 +35,7 @@ export function LeadCard({ lead, dragging, saving, onOpen, onDragStart, onDragEn
     >
       <div className="card-head">
         <p className="card-title">{lead.owner_name || 'Unknown owner'}</p>
-        <span className="card-date">{shortDate(lead.pulled_at)}</span>
+        <span className="card-date">{dateTime(lead.pulled_at)}</span>
       </div>
       <p className="card-mono">{phoneDisplay(lead.phone)}</p>
       <p className="card-detail" title={fullAddress}>

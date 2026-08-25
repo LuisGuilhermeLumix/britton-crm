@@ -9,20 +9,12 @@ import {
   YAxis,
 } from 'recharts';
 import { TagFilters } from '../components/TagFilters';
+import { DateFilter, defaultDateFilter, type DateFilterValue } from '../components/DateFilter';
 import { StatCard } from '../components/StatCard';
 import { StatCardSkeleton, Skeleton, TableSkeleton } from '../components/Skeleton';
-import { DATE_FILTERS, PRICE_PER_LEAD, stageMeta, type DateFilterKey } from '../lib/constants';
-import {
-  anyTagActive,
-  applyFilters,
-  dateRange,
-  hasSolar,
-  isDnc,
-  NO_TAGS,
-  type CustomRange,
-  type TagFilter,
-} from '../lib/filters';
-import { addDays, money, parseYMD, phoneDisplay, shortDate, tableDate, ymd } from '../lib/format';
+import { PRICE_PER_LEAD, stageMeta } from '../lib/constants';
+import { anyTagActive, applyFilters, dateRange, hasSolar, isDnc, NO_TAGS, type TagFilter } from '../lib/filters';
+import { dateTime, money, phoneDisplay, shortDate, ymd } from '../lib/format';
 import type { LeadRow } from '../lib/types';
 import { useData } from '../providers/DataProvider';
 
@@ -78,26 +70,18 @@ function ChartTooltip({ active, payload }: TooltipShape) {
 export function Dashboard() {
   const { leads, loadingLeads, leadsLoaded } = useData();
 
-  const [dateFilter, setDateFilter] = useState<DateFilterKey>('30');
-  const [customOpen, setCustomOpen] = useState(false);
-  const [customApplied, setCustomApplied] = useState(false);
-  const [customError, setCustomError] = useState('');
-  const [draft, setDraft] = useState<CustomRange>({
-    start: ymd(addDays(new Date(), -14)),
-    end: ymd(new Date()),
-  });
-  const [custom, setCustom] = useState<CustomRange>(draft);
+  const [date, setDate] = useState<DateFilterValue>(() => defaultDateFilter('30'));
   const [tags, setTags] = useState<TagFilter>(NO_TAGS);
 
   const filtered = useMemo(
-    () => applyFilters(leads, dateFilter, custom, tags),
-    [leads, dateFilter, custom, tags],
+    () => applyFilters(leads, date.key, date.custom, tags),
+    [leads, date, tags],
   );
 
   const trend = useMemo(() => {
-    const [start, end] = dateRange(dateFilter, custom);
+    const [start, end] = dateRange(date.key, date.custom);
     return buildTrend(filtered, start, end);
-  }, [filtered, dateFilter, custom]);
+  }, [filtered, date]);
 
   const total = filtered.length;
   const toCall = filtered.filter((lead) => lead.stage === 'new' || lead.stage === 'calling').length;
@@ -114,34 +98,6 @@ export function Dashboard() {
   // Max 7 readable ticks, as in the demo.
   const tickInterval = Math.max(0, Math.ceil(trend.length / 7) - 1);
 
-  function pillLabel(key: DateFilterKey, label: string) {
-    if (key !== 'custom') return label;
-    if (customApplied && dateFilter === 'custom') {
-      const start = parseYMD(custom.start);
-      const end = parseYMD(custom.end);
-      if (start && end) return `${shortDate(start)} – ${shortDate(end)}`;
-    }
-    return 'Custom';
-  }
-
-  function applyCustom() {
-    const start = parseYMD(draft.start);
-    const end = parseYMD(draft.end);
-    if (!start || !end) {
-      setCustomError('Pick both dates.');
-      return;
-    }
-    if (start > end) {
-      setCustomError('Start date must come first.');
-      return;
-    }
-    setCustom(draft);
-    setCustomApplied(true);
-    setCustomError('');
-    setDateFilter('custom');
-    setCustomOpen(false);
-  }
-
   return (
     <>
       <section className="page-header">
@@ -150,56 +106,7 @@ export function Dashboard() {
       </section>
 
       <section className="filter-bar">
-        <div className="filter-group">
-          <span className="group-label">Date</span>
-          <div className="pill-row">
-            {DATE_FILTERS.map((filter) => (
-              <button
-                key={filter.key}
-                type="button"
-                className={`pill${dateFilter === filter.key ? ' active' : ''}`}
-                onClick={() => {
-                  if (filter.key === 'custom') {
-                    setCustomOpen((open) => !open || dateFilter !== 'custom');
-                    setCustomError('');
-                    return;
-                  }
-                  setDateFilter(filter.key);
-                  setCustomOpen(false);
-                }}
-              >
-                {pillLabel(filter.key, filter.label)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {customOpen && (
-          <div className="custom-panel">
-            <div className="date-field">
-              <label htmlFor="custom-start">From</label>
-              <input
-                id="custom-start"
-                type="date"
-                value={draft.start}
-                onChange={(event) => setDraft((current) => ({ ...current, start: event.target.value }))}
-              />
-            </div>
-            <div className="date-field">
-              <label htmlFor="custom-end">To</label>
-              <input
-                id="custom-end"
-                type="date"
-                value={draft.end}
-                onChange={(event) => setDraft((current) => ({ ...current, end: event.target.value }))}
-              />
-            </div>
-            <button type="button" className="btn-secondary" onClick={applyCustom}>
-              Apply
-            </button>
-            {customError && <span className="custom-error">{customError}</span>}
-          </div>
-        )}
+        <DateFilter value={date} onChange={setDate} />
 
         <div className="filter-sep" />
 
@@ -315,7 +222,7 @@ export function Dashboard() {
                   return (
                     <tr key={lead.id}>
                       <td className="text-mono" style={{ color: 'var(--text-2)' }}>
-                        {tableDate(lead.pulled_at)}
+                        {dateTime(lead.pulled_at)}
                       </td>
                       <td>{lead.owner_name || 'Unknown owner'}</td>
                       <td className="text-mono">{phoneDisplay(lead.phone)}</td>

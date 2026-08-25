@@ -2,9 +2,10 @@ import { useMemo, useState, type DragEvent } from 'react';
 import { LeadCard } from '../components/LeadCard';
 import { LeadDrawer } from '../components/LeadDrawer';
 import { TagFilters } from '../components/TagFilters';
+import { DateFilter, defaultDateFilter, type DateFilterValue } from '../components/DateFilter';
 import { CardSkeleton } from '../components/Skeleton';
 import { BOARD_STAGES } from '../lib/constants';
-import { anyTagActive, matchesTags, NO_TAGS, type TagFilter } from '../lib/filters';
+import { applyFilters, NO_TAGS, type TagFilter } from '../lib/filters';
 import type { LeadRow, Stage } from '../lib/types';
 import { useData } from '../providers/DataProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -14,15 +15,17 @@ export function Pipeline() {
   const toast = useToast();
 
   const [tags, setTags] = useState<TagFilter>(NO_TAGS);
+  // Own state, independent of the Dashboard's date filter.
+  const [date, setDate] = useState<DateFilterValue>(() => defaultDateFilter('30'));
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<Stage | null>(null);
   const [savingIds, setSavingIds] = useState<string[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
 
-  /** do_not_call never appears on the board. */
+  /** Date ∩ tags, and do_not_call never appears on the board. */
   const boardLeads = useMemo(
-    () => leads.filter((lead) => lead.stage !== 'do_not_call' && matchesTags(lead, tags)),
-    [leads, tags],
+    () => applyFilters(leads, date.key, date.custom, tags).filter((lead) => lead.stage !== 'do_not_call'),
+    [leads, date, tags],
   );
 
   const columns = useMemo(
@@ -36,7 +39,8 @@ export function Pipeline() {
 
   const total = boardLeads.length;
   const onBoard = leads.filter((lead) => lead.stage !== 'do_not_call').length;
-  const tagsActive = anyTagActive(tags);
+  // Any filter can hide cards now, so compare counts rather than tracking which.
+  const filtering = total !== onBoard;
   const showSkeletons = loadingLeads && !leadsLoaded;
   const openLead = openId ? leads.find((lead) => lead.id === openId) ?? null : null;
 
@@ -71,6 +75,8 @@ export function Pipeline() {
       </section>
 
       <section className="pipeline-top">
+        <DateFilter value={date} onChange={setDate} />
+
         <div className="pipeline-filters">
           <TagFilters value={tags} onChange={setTags} />
         </div>
@@ -94,7 +100,7 @@ export function Pipeline() {
             </div>
           ))}
         </div>
-        {tagsActive && !showSkeletons && (
+        {filtering && !showSkeletons && (
           <p className="text-small">
             Showing {total} of {onBoard} leads.
           </p>
@@ -143,7 +149,7 @@ export function Pipeline() {
                   <div className="empty-state">
                     {leads.length === 0
                       ? 'No leads yet — pull your first batch.'
-                      : tagsActive
+                      : filtering
                         ? 'No leads match these filters.'
                         : 'No leads here.'}
                   </div>

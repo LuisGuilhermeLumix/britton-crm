@@ -1,5 +1,4 @@
 const USD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
-const FMT_TABLE = new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 const FMT_LONG = new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
 const FMT_SHORT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
 const FMT_TIME = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -16,9 +15,6 @@ export function shortValue(value: number | null): string {
   return USD.format(value);
 }
 
-export function tableDate(iso: string): string {
-  return FMT_TABLE.format(new Date(iso));
-}
 export function longDate(iso: string): string {
   return FMT_LONG.format(new Date(iso));
 }
@@ -27,6 +23,14 @@ export function shortDate(iso: string | Date): string {
 }
 export function timeOfDay(iso: string): string {
   return FMT_TIME.format(new Date(iso));
+}
+
+/**
+ * "Aug 25 · 3:41 PM" — several pulls can land on the same day, so the hour
+ * is what tells them apart on a card.
+ */
+export function dateTime(iso: string): string {
+  return `${shortDate(iso)} · ${timeOfDay(iso)}`;
 }
 
 /** US phone display: (801) 555-1234 when we get 10 digits, otherwise as stored. */

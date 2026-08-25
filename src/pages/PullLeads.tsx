@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { Checkbox } from '../components/Checkbox';
 import { Skeleton } from '../components/Skeleton';
 import { PRICE_PER_LEAD, QTY_STEP, QUICK_QTY } from '../lib/constants';
 import { longDate, money, timeOfDay } from '../lib/format';
@@ -23,9 +22,6 @@ export function PullLeads() {
   const toast = useToast();
 
   const [qty, setQty] = useState<number | null>(50);
-  const [solarOnly, setSolarOnly] = useState(false);
-  const [twoStoryOnly, setTwoStoryOnly] = useState(false);
-
   const [status, setStatus] = useState<Status>('idle');
   const [phase, setPhase] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -97,11 +93,9 @@ export function PullLeads() {
 
     let response;
     try {
-      response = await startPull({
-        count,
-        solar: solarOnly ? 'solar' : null,
-        stories: twoStoryOnly ? 'two-story' : null,
-      });
+      // Pulls are always random now. The fields stay in the payload so the
+      // n8n side keeps working unchanged if filters ever come back.
+      response = await startPull({ count, solar: null, stories: null });
     } catch (error) {
       const message = errorMessage(error, 'The pull could not be started.');
       setFailure(message);
@@ -127,7 +121,8 @@ export function PullLeads() {
       </section>
 
       <section className="card" style={{ maxWidth: 720, marginInline: 'auto', width: '100%' }}>
-        <div className="field-group">
+        {/* Last block before the divider — its margin would double up. */}
+        <div className="field-group" style={{ marginBottom: 0 }}>
           <p className="label-sm">Quantity</p>
           <div className="field-inline">
             <div className="stepper">
@@ -181,15 +176,6 @@ export function PullLeads() {
             </div>
           </div>
           <p className="text-small">Type any amount, or pick a shortcut.</p>
-        </div>
-
-        <div className="field-group">
-          <p className="label-sm">Filters</p>
-          <div className="pill-row">
-            <Checkbox label="Solar only" checked={solarOnly} onChange={setSolarOnly} />
-            <Checkbox label="Two-story only" checked={twoStoryOnly} onChange={setTwoStoryOnly} />
-          </div>
-          <p className="text-small">Leave both off to pull from every home in the territory.</p>
         </div>
 
         <div className="divider" />
