@@ -1,0 +1,1137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Utah Leads — CRM Demo</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0B0B0F;
+      --surface:#131319;
+      --surface-2:#1A1A22;
+      --border:rgba(255,255,255,0.07);
+      --border-hi:rgba(255,255,255,0.12);
+      --text:#EDEDF2;
+      --text-2:#9A9AA8;
+      --text-3:#61616E;
+      --accent:#A855F7;
+      --success:#22C55E;
+      --warning:#F59E0B;
+      --danger:#EF4444;
+      --info:#3B82F6;
+      --mono:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    *{box-sizing:border-box;}
+    html,body{margin:0;padding:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;scrollbar-width:thin;scrollbar-color:var(--border-hi) transparent;}
+    body{overflow-x:hidden;}
+    body::-webkit-scrollbar{width:10px;height:10px;}
+    body::-webkit-scrollbar-track{background:transparent;}
+    body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:999px;}
+    ::-webkit-scrollbar{width:10px;height:10px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:999px;}
+    #root{min-height:100vh;}
+    .app{display:flex;min-height:100vh;}
+
+    /* ---------- sidebar ---------- */
+    .sidebar{width:240px;position:fixed;top:0;left:0;bottom:0;padding:32px 24px 24px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;gap:32px;z-index:10;}
+    .brand{display:flex;align-items:center;min-height:32px;}
+    .brand img{height:30px;width:auto;max-width:100%;display:block;}
+    .nav{display:flex;flex-direction:column;gap:8px;}
+    .nav button{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid transparent;background:transparent;color:var(--text-2);font-family:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease;}
+    .nav button:hover{background:rgba(255,255,255,0.03);color:var(--text);}
+    .nav button.active{background:var(--surface-2);border-color:var(--accent);color:var(--text);}
+    .sidebar-footer{margin-top:auto;color:var(--text-3);font-size:11px;line-height:1.4;}
+
+    /* ---------- layout ---------- */
+    .main{margin-left:240px;flex:1;min-width:0;padding:32px;}
+    .page{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:32px;min-width:0;}
+    .page-header{display:flex;flex-direction:column;gap:8px;}
+    .page-header h2{margin:0;font-size:22px;font-weight:600;letter-spacing:-0.02em;}
+    .page-header p{margin:0;font-size:13px;color:var(--text-2);line-height:1.6;max-width:760px;}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;transition:border-color .15s ease;}
+    .card:hover{border-color:var(--border-hi);}
+    .section-title{font-size:14px;font-weight:600;margin:0;color:var(--text);}
+    .label-sm{font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);margin:0 0 12px;}
+
+    /* ---------- controls ---------- */
+    .btn-primary{width:100%;height:44px;background:var(--accent);color:#0B0B0F;border:none;border-radius:8px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer;transition:filter .15s ease;}
+    .btn-primary:hover:not(:disabled){filter:brightness(1.08);}
+    .btn-primary:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed;filter:none;}
+    .btn-secondary{height:40px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-2);padding:0 16px;cursor:pointer;font-family:inherit;font-size:13px;transition:border-color .15s ease,color .15s ease;}
+    .btn-secondary:hover{border-color:var(--border-hi);color:var(--text);}
+    .pill-row{display:flex;flex-wrap:wrap;gap:8px;}
+    .pill{height:32px;padding:0 14px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:13px;white-space:nowrap;cursor:pointer;transition:background .15s ease,border-color .15s ease,color .15s ease;}
+    .pill:hover{border-color:var(--border-hi);color:var(--text);}
+    .pill.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+    .field-group{display:grid;gap:8px;margin-bottom:24px;}
+    .field-group select,.field-group input{width:100%;height:40px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0 12px;font-family:inherit;font-size:13px;}
+    .field-inline{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;}
+    .stepper{display:grid;grid-template-columns:40px 112px 40px;gap:8px;align-items:center;}
+    .stepper .btn-secondary{padding:0;height:40px;font-size:16px;line-height:1;}
+    #qty-input{height:40px;border-radius:8px;border:1px solid var(--border);padding:0 10px;text-align:center;background:var(--surface-2);color:var(--text);font-family:var(--mono);font-size:14px;font-weight:500;width:100%;}
+    #qty-input:focus{outline:none;border-color:var(--border-hi);}
+    .divider{height:1px;background:var(--border);margin:24px 0;}
+    .text-mono{font-family:var(--mono);font-size:13px;font-weight:500;white-space:nowrap;color:var(--text);}
+    .text-small{font-size:12px;line-height:1.4;color:var(--text-3);}
+    .toast{position:fixed;right:20px;bottom:20px;padding:14px 16px;border-radius:12px;background:#142316;border:1px solid rgba(34,197,94,0.28);color:#D4F9DA;font-size:13px;z-index:60;}
+
+    /* ---------- checkbox filters ---------- */
+    .check{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 14px 0 10px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-2);font-size:13px;white-space:nowrap;cursor:pointer;user-select:none;transition:border-color .15s ease,color .15s ease;}
+    .check:hover{border-color:var(--border-hi);color:var(--text);}
+    .check input{position:absolute;opacity:0;width:0;height:0;}
+    .check .box{width:16px;height:16px;flex-shrink:0;border:1px solid var(--border-hi);border-radius:4px;display:inline-flex;align-items:center;justify-content:center;transition:background .15s ease,border-color .15s ease;}
+    .check .box svg{opacity:0;width:10px;height:10px;}
+    .check.on{border-color:var(--border-hi);color:var(--text);}
+    .check.on .box{background:var(--text);border-color:var(--text);}
+    .check.on .box svg{opacity:1;}
+    .check input:focus-visible + .box{outline:2px solid var(--border-hi);outline-offset:2px;}
+
+    .filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:16px;}
+    .filter-group{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+    .filter-group .group-label{font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);width:44px;flex-shrink:0;}
+    .filter-sep{height:1px;background:var(--border);}
+    .custom-panel{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);}
+    .custom-panel .date-field{display:flex;flex-direction:column;gap:6px;}
+    .custom-panel label{font-size:11px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3);}
+    .custom-panel input[type="date"]{height:36px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0 10px;font-family:var(--mono);font-size:13px;color-scheme:dark;}
+    .custom-panel .btn-secondary{height:36px;}
+    .custom-error{font-size:12px;color:var(--danger);align-self:center;}
+
+    /* ---------- pull page ---------- */
+    .pull-list{display:flex;flex-direction:column;gap:12px;}
+    .pull-row{display:grid;grid-template-columns:1fr auto auto;gap:16px;align-items:baseline;font-size:13px;color:var(--text-2);line-height:1.5;}
+    .pull-row span{white-space:nowrap;}
+    .pull-row .territory{color:var(--text);text-align:right;}
+    .pull-row.is-new{animation:slide-in .35s ease;}
+    @keyframes slide-in{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+
+    /* ---------- dashboard ---------- */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+    .stats-card{padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;transition:border-color .15s ease;}
+    .stats-card:hover{border-color:var(--border-hi);}
+    .stats-card .number{font-size:30px;font-weight:600;letter-spacing:-0.02em;line-height:1;}
+    .stats-card .help{margin:8px 0 0;font-size:13px;color:var(--text-3);line-height:1.5;}
+    .info-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;align-items:center;}
+    .info-item{display:flex;flex-direction:column;gap:4px;}
+    .info-item .label{font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;}
+    .info-item .value{font-size:15px;font-family:var(--mono);font-weight:500;color:var(--text);white-space:nowrap;}
+    .chart-card{padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+    .chart-card svg{display:block;width:100%;height:auto;}
+    .chart-holder{position:relative;margin-top:20px;}
+    .chart-tooltip{position:absolute;top:0;left:0;pointer-events:none;z-index:5;background:var(--surface-2);border:1px solid var(--border-hi);border-radius:8px;padding:8px 10px;line-height:1.45;white-space:nowrap;opacity:0;visibility:hidden;transition:opacity .12s ease;}
+    .chart-tooltip.show{opacity:1;visibility:visible;}
+    .chart-tooltip .tip-date{font-size:11px;color:var(--text-3);}
+    .chart-tooltip .tip-value{font-size:13px;font-weight:600;color:var(--text);}
+    .chart-tooltip .tip-cost{font-size:11px;font-family:var(--mono);color:var(--text-2);}
+    .table-scroll{overflow-x:auto;}
+    .table-full{width:100%;border-collapse:collapse;font-size:13px;}
+    .table-full thead th{padding:16px 12px 10px;text-align:left;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid var(--border);white-space:nowrap;}
+    .table-full tbody tr{border-bottom:1px solid var(--border);}
+    .table-full tbody tr:last-child{border-bottom:none;}
+    .table-full tbody td{padding:14px 12px;vertical-align:middle;font-size:13px;}
+    .table-full tbody td .truncate{display:block;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3);}
+    .status-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);white-space:nowrap;}
+    .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+
+    /* ---------- pipeline ---------- */
+    .pipeline-top{display:flex;flex-direction:column;gap:16px;}
+    .pipeline-filters{display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;}
+    .distribution-bar{height:8px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,0.05);display:flex;}
+    .distribution-segment{height:100%;}
+    .distribution-legend{display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--text-2);}
+    .legend-item{display:flex;align-items:center;gap:8px;white-space:nowrap;}
+    .legend-item .mono{font-family:var(--mono);font-size:12px;color:var(--text);}
+    .kanban-wrap{overflow-x:auto;padding-bottom:8px;}
+    .kanban-columns{display:flex;gap:16px;height:calc(100vh - 300px);min-height:420px;}
+    .kanban-column{width:272px;flex-shrink:0;display:flex;flex-direction:column;min-height:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;transition:border-color .15s ease,background .15s ease;}
+    .kanban-column.drop-target{border-color:var(--accent);background:var(--surface-2);}
+    .column-header{height:48px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;}
+    .column-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;}
+    .column-count{font-size:12px;font-family:var(--mono);color:var(--text-2);}
+    .column-body{flex:1;min-height:0;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:12px;}
+    .kanban-card{padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:background .15s ease,opacity .15s ease,border-color .15s ease;}
+    .kanban-card:hover{background:rgba(255,255,255,0.04);border-color:var(--border-hi);}
+    .kanban-card.dragging{opacity:.4;}
+    .card-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
+    .card-title{font-size:13px;font-weight:600;margin:0;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .card-date{font-size:11px;color:var(--text-3);white-space:nowrap;flex-shrink:0;}
+    .card-mono{font-size:12px;font-family:var(--mono);color:var(--text-2);white-space:nowrap;margin:0;}
+    .card-detail{font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0;}
+    .detail-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:var(--text-3);margin:0;}
+    .detail-row span{white-space:nowrap;}
+    .tag-row{display:flex;gap:6px;flex-wrap:wrap;}
+    .tag{font-size:10px;line-height:1;padding:4px 7px;border-radius:6px;border:1px solid transparent;white-space:nowrap;font-weight:500;letter-spacing:.02em;}
+    .tag-solar{background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.24);color:#F0B451;}
+    .tag-story{background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.24);color:#7FAEF5;}
+
+    /* ---------- drawer ---------- */
+    .drawer-backdrop{position:fixed;inset:0;background:rgba(11,11,15,0.55);z-index:40;}
+    .drawer{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:var(--surface);border-left:1px solid var(--border);padding:24px;z-index:50;display:flex;flex-direction:column;gap:20px;overflow-y:auto;}
+    .drawer-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;}
+    .drawer-title{margin:0;font-size:18px;font-weight:600;}
+    .drawer-phone{font-size:16px;font-family:var(--mono);color:var(--text);margin:8px 0 0;}
+    .drawer-status{font-size:13px;color:var(--text-2);margin:6px 0 0;display:flex;align-items:center;gap:8px;}
+    .action-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+    .action-btn{height:38px;padding:0 6px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-2);font-family:inherit;font-size:11px;cursor:pointer;transition:border-color .15s ease,color .15s ease;}
+    .action-btn:hover{border-color:var(--border-hi);color:var(--text);}
+    .action-btn.current{border-color:var(--border-hi);color:var(--text);background:var(--surface-2);}
+    .drawer-block{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+    .drawer-block .section-title{margin-bottom:12px;}
+    .drawer-field{display:flex;justify-content:space-between;gap:16px;font-size:13px;color:var(--text-2);margin-bottom:10px;}
+    .drawer-field:last-child{margin-bottom:0;}
+    .drawer-field strong{color:var(--text-3);font-weight:500;}
+    .drawer textarea{width:100%;min-height:88px;background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px;font-family:inherit;font-size:13px;resize:none;margin-bottom:12px;}
+    .drawer textarea:focus{outline:none;border-color:var(--border-hi);}
+    .drawer-notes{display:flex;flex-direction:column;gap:12px;max-height:240px;overflow-y:auto;margin-top:12px;}
+    .note-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;font-size:13px;color:var(--text-2);line-height:1.5;}
+    .note-date{font-size:11px;color:var(--text-3);margin-bottom:4px;}
+    .empty-state{padding:32px 12px;text-align:center;color:var(--text-3);font-size:13px;line-height:1.5;}
+
+    @media (max-width:1120px){.stats-grid{grid-template-columns:repeat(2,1fr);} .main{padding:24px;} .sidebar{padding:24px 18px 18px;}}
+    @media (max-width:860px){
+      .app{flex-direction:column;}
+      .sidebar{position:relative;width:100%;border-right:none;border-bottom:1px solid var(--border);min-height:auto;gap:20px;}
+      .nav{flex-direction:row;flex-wrap:wrap;}
+      .main{margin-left:0;padding:20px;}
+      .stats-grid{grid-template-columns:1fr;}
+      .info-strip{grid-template-columns:1fr;}
+      .drawer{width:100%;}
+      .filter-group .group-label{width:100%;}
+    }
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;}}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+  (function(){
+    'use strict';
+
+    /* ============================================================
+       Constants
+       ============================================================ */
+    const PRICE_PER_LEAD = 0.40;
+    const QTY_STEP = 25;
+    const QUICK_QTY = [25, 50, 100, 250];
+    const PULL_DURATION = 4000;
+    const CHART_W = 1100, CHART_H = 280;
+
+    const DATE_FILTERS = [
+      {key:'today',    label:'Today'},
+      {key:'yesterday',label:'Yesterday'},
+      {key:'7',        label:'7 days'},
+      {key:'30',       label:'30 days'},
+      {key:'month',    label:'This month'},
+      {key:'custom',   label:'Custom'}
+    ];
+
+    const PIPELINE_DATE_FILTERS = [
+      {key:'all', label:'All time'},
+      {key:'today', label:'Today'},
+      {key:'7', label:'7 days'},
+      {key:'30', label:'30 days'}
+    ];
+
+    const STATUS = [
+      {key:'not_contacted', label:'Not contacted', color:'#FBBF24'},
+      {key:'calling',       label:'Calling',       color:'#60A5FA'},
+      {key:'talked',        label:'Talked',        color:'#22D3EE'},
+      {key:'booked',        label:'Booked',        color:'#A855F7'},
+      {key:'done',          label:'Done',          color:'#34D399'},
+      {key:'not_interested',label:'Not interested',color:'#6B7280'}
+    ];
+    /* weights used only to seed the sample data */
+    const STATUS_WEIGHTS = [0.30, 0.18, 0.16, 0.14, 0.10, 0.12];
+
+    const TERRITORIES = [
+      {key:'slc',      label:'Salt Lake City', zip:'84108'},
+      {key:'suburbs',  label:'Suburbs',        zip:'84070'},
+      {key:'mountain', label:'Mountain Front', zip:'84092'}
+    ];
+
+    const PAGES = [
+      {key:'pull',      label:'Pull Leads'},
+      {key:'dashboard', label:'Dashboard'},
+      {key:'pipeline',  label:'Pipeline'}
+    ];
+
+    const root = document.getElementById('root');
+    const USD = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD', minimumFractionDigits:2});
+    const FMT_TABLE = new Intl.DateTimeFormat('en-US', {month:'2-digit', day:'2-digit', year:'numeric'});
+    const FMT_LONG  = new Intl.DateTimeFormat('en-US', {month:'short', day:'2-digit', year:'numeric'});
+    const FMT_SHORT = new Intl.DateTimeFormat('en-US', {month:'short', day:'numeric'});
+    const FMT_TIME  = new Intl.DateTimeFormat('en-US', {hour:'numeric', minute:'2-digit', hour12:true});
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    /* ============================================================
+       State
+       ============================================================ */
+    let leadSeq = 0;              // declared here: the state initializer below pulls sample leads
+    let chartPoints = [];         // geometry of the last-drawn chart, read by the hover tooltip
+    const today = new Date();
+    const state = {
+      page: getHash(),
+      leads: createSampleLeads(140),
+      pulls: [],
+      /* pull page */
+      qty: 50,
+      territory: 'slc',
+      /* dashboard filters */
+      dateFilter: '30',
+      customOpen: false,
+      customApplied: false,
+      customStart: ymd(addDays(today, -14)),
+      customEnd: ymd(today),
+      customError: '',
+      tagSolar: false,
+      tagTwoStory: false,
+      /* pipeline filters */
+      pipeDate: 'all',
+      pipeSolar: false,
+      pipeTwoStory: false
+    };
+
+    /* ============================================================
+       Helpers
+       ============================================================ */
+    function getHash(){
+      const hash = location.hash.replace('#','');
+      return PAGES.some(p => p.key === hash) ? hash : 'pull';
+    }
+    function navigate(page){ state.page = page; location.hash = '#' + page; render(); }
+
+    function addDays(date, days){ const d = new Date(date); d.setDate(d.getDate() + days); return d; }
+    function ymd(date){
+      return date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+    }
+    function parseYMD(value){
+      const parts = String(value).split('-').map(Number);
+      if(parts.length !== 3 || parts.some(isNaN)) return null;
+      return new Date(parts[0], parts[1]-1, parts[2]);
+    }
+    function startOfDay(date){ const d = new Date(date); d.setHours(0,0,0,0); return d; }
+    function endOfDay(date){ const d = new Date(date); d.setHours(23,59,59,999); return d; }
+
+    function formatTableDate(iso){ return FMT_TABLE.format(new Date(iso)); }   // 07/31/2026
+    function formatLongDate(iso){ return FMT_LONG.format(new Date(iso)); }     // Jul 31, 2026
+    function formatShortDate(iso){ return FMT_SHORT.format(new Date(iso)); }   // Jul 31
+    function formatTime(iso){ return FMT_TIME.format(new Date(iso)); }         // 2:14 PM
+    function formatMoney(value){ return USD.format(value); }
+    function formatLeadValue(value){
+      if(value >= 1000000) return '$' + (value/1000000).toFixed(1) + 'M';
+      if(value >= 1000) return '$' + Math.round(value/1000) + 'k';
+      return formatMoney(value);
+    }
+    function escapeHtml(text){
+      return String(text).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+    function statusMeta(key){ return STATUS.find(s => s.key === key) || {key:key, label:key, color:'var(--text-2)'}; }
+    function territoryMeta(key){ return TERRITORIES.find(t => t.key === key) || TERRITORIES[0]; }
+
+    /* ---- date ranges ---------------------------------------- */
+    function dateRange(key){
+      const now = new Date();
+      switch(key){
+        case 'today':     return [startOfDay(now), endOfDay(now)];
+        case 'yesterday': return [startOfDay(addDays(now,-1)), endOfDay(addDays(now,-1))];
+        case '7':         return [startOfDay(addDays(now,-6)), endOfDay(now)];
+        case '30':        return [startOfDay(addDays(now,-29)), endOfDay(now)];
+        case 'month':     { const s = new Date(now.getFullYear(), now.getMonth(), 1); return [startOfDay(s), endOfDay(now)]; }
+        case 'custom':    {
+          const s = parseYMD(state.customStart) || addDays(now,-14);
+          const e = parseYMD(state.customEnd) || now;
+          return [startOfDay(s), endOfDay(e)];
+        }
+        default:          return [startOfDay(addDays(now,-29)), endOfDay(now)];
+      }
+    }
+    function inRange(iso, start, end){ const d = new Date(iso); return d >= start && d <= end; }
+
+    /* ---- filtering ------------------------------------------ */
+    function matchesTags(lead, solar, twoStory){
+      if(solar && !lead.has_solar) return false;
+      if(twoStory && !lead.two_story) return false;
+      return true;
+    }
+    /* Dashboard: date filter AND tag filter — the intersection. */
+    function getDashboardLeads(){
+      const [start, end] = dateRange(state.dateFilter);
+      return state.leads.filter(lead =>
+        inRange(lead.pulled_at, start, end) && matchesTags(lead, state.tagSolar, state.tagTwoStory)
+      );
+    }
+    /* Pipeline: its own (independent) date + tag filters. */
+    function getPipelineLeads(){
+      let list = state.leads;
+      if(state.pipeDate !== 'all'){
+        const [start, end] = dateRange(state.pipeDate);
+        list = list.filter(lead => inRange(lead.pulled_at, start, end));
+      }
+      return list.filter(lead => matchesTags(lead, state.pipeSolar, state.pipeTwoStory));
+    }
+    function getStatusTotals(list){
+      return STATUS.reduce((acc, s) => { acc[s.key] = list.filter(l => l.status === s.key).length; return acc; }, {});
+    }
+
+    /* ============================================================
+       Render
+       ============================================================ */
+    function render(){
+      root.innerHTML = `
+      <div class="app">
+        <aside class="sidebar">
+          <div class="brand"><img src="logo-lumix.png" alt="Lumix" /></div>
+          <nav class="nav">${PAGES.map(page => `
+            <button type="button" class="${state.page === page.key ? 'active' : ''}" data-route="${page.key}">${page.label}</button>`).join('')}
+          </nav>
+          <div class="sidebar-footer">Demo · sample data</div>
+        </aside>
+        <main class="main"><div class="page">${renderPage()}</div></main>
+      </div>`;
+
+      root.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.route)));
+      if(state.page === 'pull') attachPullEvents();
+      if(state.page === 'dashboard') attachDashboardEvents();
+      if(state.page === 'pipeline') attachPipelineEvents();
+    }
+
+    function renderPage(){
+      if(state.page === 'dashboard') return renderDashboard();
+      if(state.page === 'pipeline') return renderPipeline();
+      return renderPull();
+    }
+
+    /* ---------- page 1: Pull Leads ---------------------------- */
+    function renderPull(){
+      const qty = state.qty || 0;
+      const rows = state.pulls.slice(0, 6);
+      const html = `
+      <section class="page-header">
+        <h2>Pull Leads</h2>
+        <p>Homeowners in Salt Lake City, with name and phone number already verified.</p>
+      </section>
+
+      <section class="card" style="max-width:720px;margin-inline:auto;width:100%;">
+        <div class="field-group">
+          <p class="label-sm">Quantity</p>
+          <div class="field-inline">
+            <div class="stepper">
+              <button id="decrease-qty" class="btn-secondary" type="button" aria-label="Decrease quantity">&minus;</button>
+              <input id="qty-input" type="text" inputmode="numeric" autocomplete="off" value="${qty || ''}" aria-label="Quantity" />
+              <button id="increase-qty" class="btn-secondary" type="button" aria-label="Increase quantity">+</button>
+            </div>
+            <div class="pill-row">${QUICK_QTY.map(value => `
+              <button type="button" class="pill ${state.qty === value ? 'active' : ''}" data-qty="${value}">${value}</button>`).join('')}
+            </div>
+          </div>
+          <p class="text-small">Type any amount, or pick a shortcut.</p>
+        </div>
+
+        <div class="field-group">
+          <p class="label-sm">Territory</p>
+          <select id="territory-select">${TERRITORIES.map(t => `
+            <option value="${t.key}" ${state.territory === t.key ? 'selected' : ''}>${t.label} · ${t.zip}</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="text-align:right;">
+            <p class="label-sm" style="margin-bottom:8px;">Cost of this pull</p>
+            <div id="cost-value" class="text-mono" style="font-size:36px;font-weight:600;letter-spacing:-0.02em;">${formatMoney(qty * PRICE_PER_LEAD)}</div>
+            <p id="cost-detail" class="text-small" style="margin-top:6px;">${qty} leads × $0.40</p>
+          </div>
+          <button id="pull-button" class="btn-primary" type="button" ${qty ? '' : 'disabled'}>Pull Leads</button>
+          <p class="text-small" style="text-align:center;">Single-family, owner-occupied homes only. Numbers scrubbed against the federal Do Not Call list.</p>
+        </div>
+
+        <div id="pull-progress" style="display:none;flex-direction:column;gap:12px;margin-top:24px;">
+          <p id="pull-phase" class="text-small"></p>
+          <div style="height:8px;border-radius:999px;background:rgba(255,255,255,0.08);overflow:hidden;">
+            <div id="pull-bar" style="height:100%;width:0%;background:var(--accent);"></div>
+          </div>
+          <p id="pull-counter" class="text-small" style="text-align:right;">0 / ${qty}</p>
+        </div>
+      </section>
+
+      <section style="display:flex;flex-direction:column;gap:16px;max-width:720px;margin-inline:auto;width:100%;">
+        <h3 class="section-title">Recent pulls</h3>
+        <div class="pull-list">${rows.length ? rows.map((item, i) => `
+          <div class="pull-row ${item.isNew && i === 0 ? 'is-new' : ''}">
+            <span>${formatLongDate(item.date)} · ${formatTime(item.date)}</span>
+            <span class="territory">${item.territory}</span>
+            <span class="text-mono">${item.count} leads · ${formatMoney(item.cost)}</span>
+          </div>`).join('') : '<div class="empty-state">No pulls yet. Pull leads and they show up here.</div>'}
+        </div>
+      </section>`;
+      /* the slide-in plays once, on the render right after the pull */
+      state.pulls.forEach(p => { p.isNew = false; });
+      return html;
+    }
+
+    /* ---------- page 2: Dashboard ----------------------------- */
+    function renderDashboard(){
+      const leads = getDashboardLeads();
+      const totals = getStatusTotals(leads);
+      const total = leads.length;
+      const toCall = totals.not_contacted + totals.calling;
+      const appointments = totals.booked + totals.done;
+      const bookingRate = total ? Math.round((appointments / total) * 100) : 0;
+      const spend = total * PRICE_PER_LEAD;
+      const solarCount = leads.filter(l => l.has_solar).length;
+      const solarPct = total ? Math.round((solarCount / total) * 100) : 0;
+      const trend = buildTrend(leads);
+      const recent = [...leads].sort((a,b) => new Date(b.pulled_at) - new Date(a.pulled_at)).slice(0, 8);
+
+      chartPoints = [];
+      const chartHtml = total
+        ? buildChartSvg(trend) + '<div id="chart-tooltip" class="chart-tooltip"></div>'
+        : '<div class="empty-state">Nothing to chart for this selection.</div>';
+
+      const cards = [
+        {title:'Leads pulled',    value:total,             help:'in the selected period'},
+        {title:'To call',         value:toCall,            help:'not contacted and calling'},
+        {title:'Appointments booked', value:appointments,  help:'booked and done'},
+        {title:'Booking rate',    value:bookingRate + '%', help:'appointments out of leads pulled'}
+      ];
+
+      return `
+      <section class="page-header">
+        <h2>Dashboard</h2>
+        <p>How the lead operation is doing.</p>
+      </section>
+
+      <section class="filter-bar">
+        <div class="filter-group">
+          <span class="group-label">Date</span>
+          <div class="pill-row">${DATE_FILTERS.map(filter => `
+            <button type="button" class="pill ${state.dateFilter === filter.key ? 'active' : ''}" data-filter="${filter.key}">${customPillLabel(filter)}</button>`).join('')}
+          </div>
+        </div>
+        ${state.customOpen ? `
+        <div class="custom-panel">
+          <div class="date-field"><label for="custom-start">From</label><input type="date" id="custom-start" value="${state.customStart}" /></div>
+          <div class="date-field"><label for="custom-end">To</label><input type="date" id="custom-end" value="${state.customEnd}" /></div>
+          <button type="button" class="btn-secondary" id="custom-apply">Apply</button>
+          ${state.customError ? `<span class="custom-error">${state.customError}</span>` : ''}
+        </div>` : ''}
+        <div class="filter-sep"></div>
+        <div class="filter-group">
+          <span class="group-label">Type</span>
+          <div class="pill-row">
+            ${checkboxHtml('dash-solar', 'Solar', state.tagSolar)}
+            ${checkboxHtml('dash-two-story', 'Two-story', state.tagTwoStory)}
+          </div>
+          ${(state.tagSolar || state.tagTwoStory) ? `<span class="text-small">${total} of ${state.leads.length} leads match</span>` : ''}
+        </div>
+      </section>
+
+      <section class="stats-grid">${cards.map(item => `
+        <div class="stats-card"><p class="label-sm">${item.title}</p><div class="number">${item.value}</div><p class="help">${item.help}</p></div>`).join('')}
+      </section>
+
+      <section class="info-strip">
+        <div class="info-item"><span class="label">Cost per lead</span><span class="value">$0.40</span></div>
+        <div class="info-item"><span class="label">Spend in period</span><span class="value">${formatMoney(spend)}</span></div>
+        <div class="info-item"><span class="label">Homes with solar</span><span class="value">${solarCount} (${solarPct}%)</span></div>
+      </section>
+
+      <section class="chart-card">
+        <div class="section-title">Leads pulled per day</div>
+        <div class="chart-holder" id="chart-holder">${chartHtml}</div>
+      </section>
+
+      <section class="card">
+        <div class="section-title" style="margin-bottom:16px;">Recent leads</div>
+        ${recent.length ? `
+        <div class="table-scroll">
+          <table class="table-full">
+            <thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Address</th><th>Status</th></tr></thead>
+            <tbody>${recent.map(item => `
+              <tr>
+                <td class="text-mono" style="color:var(--text-2);">${formatTableDate(item.pulled_at)}</td>
+                <td>${escapeHtml(item.first_name + ' ' + item.last_name)}</td>
+                <td class="text-mono">${item.phone}</td>
+                <td><span class="truncate" title="${escapeHtml(item.address + ', ' + item.city)}">${escapeHtml(item.address + ', ' + item.city)}</span></td>
+                <td><span class="status-row"><span class="status-dot" style="background:${statusMeta(item.status).color}"></span>${statusMeta(item.status).label}</span></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : '<div class="empty-state">No leads match these filters.</div>'}
+      </section>`;
+    }
+
+    function customPillLabel(filter){
+      if(filter.key !== 'custom') return filter.label;
+      if(state.customApplied && state.dateFilter === 'custom'){
+        const s = parseYMD(state.customStart), e = parseYMD(state.customEnd);
+        if(s && e) return FMT_SHORT.format(s) + ' – ' + FMT_SHORT.format(e);
+      }
+      return 'Custom';
+    }
+
+    function checkboxHtml(id, label, checked){
+      return `<label class="check ${checked ? 'on' : ''}">
+        <input type="checkbox" id="${id}" ${checked ? 'checked' : ''} />
+        <span class="box"><svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M1.5 6.2 4.4 9 10.5 2.8" stroke="#0B0B0F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>${label}</span>
+      </label>`;
+    }
+
+    /* ---------- page 3: Pipeline ------------------------------ */
+    function renderPipeline(){
+      const leads = getPipelineLeads();
+      const totals = getStatusTotals(leads);
+      const total = leads.length;
+      const filtered = state.pipeSolar || state.pipeTwoStory || state.pipeDate !== 'all';
+      const columns = STATUS.map(s => ({
+        status: s.key,
+        label: s.label,
+        color: s.color,
+        count: totals[s.key] || 0,
+        leads: leads.filter(l => l.status === s.key)
+      }));
+
+      return `
+      <section class="page-header">
+        <h2>Pipeline</h2>
+        <p>Drag a card to change status.</p>
+      </section>
+
+      <section class="pipeline-top">
+        <div class="pipeline-filters">
+          <div class="filter-group">
+            <span class="group-label">Type</span>
+            <div class="pill-row">
+              ${checkboxHtml('pipe-solar', 'Solar', state.pipeSolar)}
+              ${checkboxHtml('pipe-two-story', 'Two-story', state.pipeTwoStory)}
+            </div>
+          </div>
+          <div class="filter-group">
+            <span class="group-label">Date</span>
+            <div class="pill-row">${PIPELINE_DATE_FILTERS.map(f => `
+              <button type="button" class="pill ${state.pipeDate === f.key ? 'active' : ''}" data-pipe-date="${f.key}">${f.label}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="distribution-bar">${total ? columns.map(col => `
+          <div class="distribution-segment" style="flex:${col.count};background:${col.color}"></div>`).join('') : ''}
+        </div>
+        <div class="distribution-legend">${columns.map(col => `
+          <div class="legend-item"><span class="status-dot" style="background:${col.color}"></span><span>${col.label}</span><span class="mono">${col.count}</span></div>`).join('')}
+        </div>
+        ${filtered ? `<p class="text-small">Showing ${total} of ${state.leads.length} leads.</p>` : ''}
+      </section>
+
+      <section class="kanban-wrap">
+        <div class="kanban-columns">${columns.map(col => `
+          <div class="kanban-column" data-status="${col.status}">
+            <div class="column-header">
+              <div class="column-title"><span class="status-dot" style="background:${col.color}"></span>${col.label}</div>
+              <div class="column-count">${col.count}</div>
+            </div>
+            <div class="column-body">${col.leads.length
+              ? col.leads.map(renderLeadCard).join('')
+              : `<div class="empty-state">${filtered ? 'No leads match the filters.' : 'No leads here.'}</div>`}
+            </div>
+          </div>`).join('')}
+        </div>
+      </section>`;
+    }
+
+    function renderLeadCard(item){
+      const tags = [];
+      if(item.has_solar) tags.push('<span class="tag tag-solar">Solar</span>');
+      if(item.two_story) tags.push('<span class="tag tag-story">2-story</span>');
+      const fullAddress = escapeHtml(item.address + ', ' + item.city);
+      return `
+      <div class="kanban-card" draggable="true" data-id="${item.id}">
+        <div class="card-head">
+          <p class="card-title">${escapeHtml(item.first_name + ' ' + item.last_name)}</p>
+          <span class="card-date">${formatShortDate(item.pulled_at)}</span>
+        </div>
+        <p class="card-mono">${item.phone}</p>
+        <p class="card-detail" title="${fullAddress}">${escapeHtml(item.address)} · ${escapeHtml(item.city)}</p>
+        <p class="detail-row"><span>${item.year_built}</span><span>${item.stories === 1 ? '1 story' : '2 stories'}</span><span>${formatLeadValue(item.est_value)}</span></p>
+        ${tags.length ? `<div class="tag-row">${tags.join('')}</div>` : ''}
+      </div>`;
+    }
+
+    /* ============================================================
+       Events
+       ============================================================ */
+    function attachPullEvents(){
+      const qtyInput = document.getElementById('qty-input');
+
+      document.getElementById('decrease-qty').addEventListener('click', () => {
+        state.qty = Math.max(1, (state.qty || 0) - QTY_STEP);
+        qtyInput.value = state.qty;
+        updatePullUI();
+      });
+      document.getElementById('increase-qty').addEventListener('click', () => {
+        state.qty = (state.qty || 0) + QTY_STEP;
+        qtyInput.value = state.qty;
+        updatePullUI();
+      });
+      /* Free typing: no re-render here, so the caret and focus survive. */
+      qtyInput.addEventListener('input', () => {
+        const digits = qtyInput.value.replace(/\D/g, '');
+        if(digits !== qtyInput.value) qtyInput.value = digits;
+        state.qty = digits ? parseInt(digits, 10) : null;
+        updatePullUI();
+      });
+      qtyInput.addEventListener('blur', () => {
+        if(!state.qty){ state.qty = 1; qtyInput.value = 1; updatePullUI(); }
+      });
+      document.querySelectorAll('.pill[data-qty]').forEach(btn => btn.addEventListener('click', () => {
+        state.qty = parseInt(btn.dataset.qty, 10);
+        qtyInput.value = state.qty;
+        updatePullUI();
+      }));
+      document.getElementById('territory-select').addEventListener('change', e => { state.territory = e.target.value; });
+      document.getElementById('pull-button').addEventListener('click', startPull);
+    }
+
+    /* Live cost + shortcut highlight without rebuilding the page. */
+    function updatePullUI(){
+      const qty = state.qty || 0;
+      document.getElementById('cost-value').textContent = formatMoney(qty * PRICE_PER_LEAD);
+      document.getElementById('cost-detail').textContent = `${qty} leads × $0.40`;
+      document.getElementById('pull-button').disabled = !qty;
+      document.getElementById('pull-counter').textContent = `0 / ${qty}`;
+      document.querySelectorAll('.pill[data-qty]').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.qty, 10) === state.qty);
+      });
+    }
+
+    function attachDashboardEvents(){
+      document.querySelectorAll('.pill[data-filter]').forEach(btn => btn.addEventListener('click', () => {
+        const key = btn.dataset.filter;
+        if(key === 'custom'){
+          state.customOpen = !state.customOpen || state.dateFilter !== 'custom';
+          state.customError = '';
+          render();
+          return;
+        }
+        state.dateFilter = key;
+        state.customOpen = false;
+        render();
+      }));
+
+      const startInput = document.getElementById('custom-start');
+      const endInput = document.getElementById('custom-end');
+      if(startInput) startInput.addEventListener('change', () => { state.customStart = startInput.value; });
+      if(endInput) endInput.addEventListener('change', () => { state.customEnd = endInput.value; });
+
+      const apply = document.getElementById('custom-apply');
+      if(apply) apply.addEventListener('click', () => {
+        const s = parseYMD(startInput.value), e = parseYMD(endInput.value);
+        if(!s || !e){ state.customError = 'Pick both dates.'; render(); return; }
+        if(s > e){ state.customError = 'Start date must come first.'; render(); return; }
+        state.customStart = startInput.value;
+        state.customEnd = endInput.value;
+        state.customApplied = true;
+        state.customError = '';
+        state.dateFilter = 'custom';
+        state.customOpen = false;
+        render();
+      });
+
+      bindCheckbox('dash-solar', () => { state.tagSolar = !state.tagSolar; render(); });
+      bindCheckbox('dash-two-story', () => { state.tagTwoStory = !state.tagTwoStory; render(); });
+      attachChartTooltip();
+    }
+
+    /* Hand-rolled SVG chart, so the tooltip is a mousemove that snaps to the
+       nearest day and positions a plain <div> over the plot. */
+    function attachChartTooltip(){
+      const holder = document.getElementById('chart-holder');
+      if(!holder || !chartPoints.length) return;
+      const svg = holder.querySelector('svg');
+      const tip = document.getElementById('chart-tooltip');
+      const dot = holder.querySelector('#chart-dot');
+      const rule = holder.querySelector('#chart-rule');
+      if(!svg || !tip || !dot) return;
+
+      let activeIndex = -1;
+
+      function onMove(event){
+        const box = svg.getBoundingClientRect();
+        if(!box.width || !box.height) return;
+        const scaleX = box.width / CHART_W;
+        const scaleY = box.height / CHART_H;
+        const viewX = (event.clientX - box.left) / scaleX;
+
+        let index = 0;
+        for(let i = 1; i < chartPoints.length; i++){
+          if(Math.abs(chartPoints[i].x - viewX) < Math.abs(chartPoints[index].x - viewX)) index = i;
+        }
+        const point = chartPoints[index];
+
+        if(index !== activeIndex){
+          activeIndex = index;
+          tip.innerHTML =
+            `<div class="tip-date">${point.label}</div>` +
+            `<div class="tip-value">${point.count} ${point.count === 1 ? 'lead' : 'leads'}</div>` +
+            `<div class="tip-cost">${formatMoney(point.count * PRICE_PER_LEAD)}</div>`;
+          dot.setAttribute('cx', point.x.toFixed(1));
+          dot.setAttribute('cy', point.y.toFixed(1));
+          dot.setAttribute('opacity', '1');
+          if(rule){
+            rule.setAttribute('x1', point.x.toFixed(1));
+            rule.setAttribute('x2', point.x.toFixed(1));
+            rule.setAttribute('opacity', '1');
+          }
+        }
+        tip.classList.add('show');
+
+        /* keep the bubble inside the card */
+        const left = Math.max(0, Math.min(holder.clientWidth - tip.offsetWidth, point.x * scaleX - tip.offsetWidth / 2));
+        const above = point.y * scaleY - tip.offsetHeight - 12;
+        tip.style.left = left.toFixed(1) + 'px';
+        tip.style.top = (above < 0 ? point.y * scaleY + 16 : above).toFixed(1) + 'px';
+      }
+
+      function onLeave(){
+        activeIndex = -1;
+        tip.classList.remove('show');
+        dot.setAttribute('opacity', '0');
+        if(rule) rule.setAttribute('opacity', '0');
+      }
+
+      svg.addEventListener('mousemove', onMove);
+      svg.addEventListener('mouseleave', onLeave);
+    }
+
+    function bindCheckbox(id, handler){
+      const input = document.getElementById(id);
+      if(input) input.addEventListener('change', handler);
+    }
+
+    function attachPipelineEvents(){
+      bindCheckbox('pipe-solar', () => { state.pipeSolar = !state.pipeSolar; render(); });
+      bindCheckbox('pipe-two-story', () => { state.pipeTwoStory = !state.pipeTwoStory; render(); });
+      document.querySelectorAll('.pill[data-pipe-date]').forEach(btn => btn.addEventListener('click', () => {
+        state.pipeDate = btn.dataset.pipeDate;
+        render();
+      }));
+      document.querySelectorAll('.kanban-card').forEach(card => {
+        card.addEventListener('dragstart', dragStart);
+        card.addEventListener('dragend', dragEnd);
+        card.addEventListener('click', () => openDrawer(card.dataset.id));
+      });
+      document.querySelectorAll('.kanban-column').forEach(column => {
+        column.addEventListener('dragover', dragOver);
+        column.addEventListener('dragleave', dragLeave);
+        column.addEventListener('drop', dropCard);
+      });
+    }
+
+    let draggedId = null;
+    function dragStart(event){
+      draggedId = event.currentTarget.dataset.id;
+      event.currentTarget.classList.add('dragging');
+      if(event.dataTransfer){ event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', draggedId); }
+    }
+    function dragEnd(event){ event.currentTarget.classList.remove('dragging'); }
+    function dragOver(event){ event.preventDefault(); event.currentTarget.classList.add('drop-target'); }
+    function dragLeave(event){ event.currentTarget.classList.remove('drop-target'); }
+    function dropCard(event){
+      event.preventDefault();
+      event.currentTarget.classList.remove('drop-target');
+      const targetStatus = event.currentTarget.dataset.status;
+      if(!draggedId) return;
+      const id = draggedId;
+      draggedId = null;
+      state.leads = state.leads.map(item => item.id === id ? {...item, status: targetStatus} : item);
+      render();
+    }
+
+    /* ============================================================
+       Pull flow
+       ============================================================ */
+    function startPull(){
+      const qty = state.qty;
+      if(!qty) return;
+      const territory = territoryMeta(state.territory);
+      const container = document.getElementById('pull-progress');
+      const bar = document.getElementById('pull-bar');
+      const phaseEl = document.getElementById('pull-phase');
+      const counter = document.getElementById('pull-counter');
+      const button = document.getElementById('pull-button');
+
+      const phases = [
+        `Searching homes in ${territory.zip}…`,
+        'Filtering single-family, owner-occupied…',
+        'Finding name and phone…',
+        'Scrubbing against the Do Not Call list…',
+        'Saving to your pipeline…'
+      ];
+
+      button.disabled = true;
+      container.style.display = 'flex';
+      bar.style.width = '0%';
+      phaseEl.textContent = phases[0];
+      counter.textContent = `0 / ${qty}`;
+
+      if(reducedMotion.matches){
+        bar.style.width = '100%';
+        phaseEl.textContent = phases[phases.length - 1];
+        counter.textContent = `${qty} / ${qty}`;
+        setTimeout(() => completePull(qty, territory), 400);
+        return;
+      }
+
+      const started = performance.now();
+      function tick(now){
+        const t = Math.min(1, (now - started) / PULL_DURATION);
+        bar.style.width = (t * 100).toFixed(1) + '%';
+        counter.textContent = `${Math.round(t * qty)} / ${qty}`;
+        phaseEl.textContent = phases[Math.min(phases.length - 1, Math.floor(t * phases.length))];
+        if(t < 1) requestAnimationFrame(tick);
+        else completePull(qty, territory);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function completePull(qty, territory){
+      const cost = qty * PRICE_PER_LEAD;
+      const fresh = createSampleLeads(qty, {status:'not_contacted', pulledAt:new Date(), city:territory.label});
+      state.leads = [...fresh, ...state.leads];
+      /* New row lands on top of Recent pulls with the current date and time. */
+      state.pulls.forEach(p => { p.isNew = false; });
+      state.pulls.unshift({date:new Date().toISOString(), territory:territory.label, count:qty, cost:cost, isNew:true});
+      if(state.pulls.length > 6) state.pulls.length = 6;
+      render();
+      showToast(`${qty} leads pulled · ${formatMoney(cost)}`);
+    }
+
+    function showToast(text){
+      document.querySelectorAll('.toast').forEach(el => el.remove());
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.setAttribute('role', 'status');
+      toast.textContent = text;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4200);
+    }
+
+    /* ============================================================
+       Chart
+       ============================================================ */
+    function buildTrend(list){
+      const [start, end] = dateRange(state.dateFilter);
+      const days = [];
+      const cursor = startOfDay(start);
+      const limit = startOfDay(end);
+      let guard = 0;
+      while(cursor <= limit && guard < 400){
+        days.push({date: ymd(cursor), count: 0});
+        cursor.setDate(cursor.getDate() + 1);
+        guard++;
+      }
+      const index = new Map(days.map(d => [d.date, d]));
+      list.forEach(item => {
+        const day = index.get(ymd(new Date(item.pulled_at)));
+        if(day) day.count += 1;
+      });
+      return days;
+    }
+
+    function buildChartSvg(data){
+      if(!data.length) return '<div class="empty-state">Nothing to chart for this selection.</div>';
+      const width = CHART_W, height = CHART_H, padding = 40, bottom = height - 44;
+      const maxCount = Math.max(...data.map(d => d.count), 1);
+      const step = data.length > 1 ? (width - padding * 2) / (data.length - 1) : 0;
+      const points = data.map((d, i) => ({
+        x: data.length > 1 ? padding + i * step : width / 2,
+        y: padding + (1 - d.count / maxCount) * (bottom - padding),
+        label: FMT_SHORT.format(parseYMD(d.date)),
+        count: d.count
+      }));
+      chartPoints = points;   // reused by the hover tooltip
+
+      const line = points.map((p, i) => (i === 0 ? 'M' : 'L') + ' ' + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
+      const area = points.length > 1
+        ? line + ` L ${points[points.length-1].x.toFixed(1)} ${bottom} L ${points[0].x.toFixed(1)} ${bottom} Z`
+        : '';
+
+      /* at most 7 evenly spread ticks so labels stay readable */
+      const tickCount = Math.min(7, points.length);
+      const tickIdx = tickCount <= 1 ? [0] : [...new Set(
+        Array.from({length: tickCount}, (_, i) => Math.round(i * (points.length - 1) / (tickCount - 1)))
+      )];
+
+      const gridlines = [0, 1, 2, 3].map(i => {
+        const y = padding + i * ((bottom - padding) / 3);
+        return `<line x1="${padding}" y1="${y.toFixed(1)}" x2="${width - padding}" y2="${y.toFixed(1)}"/>`;
+      }).join('');
+
+      const dots = points.length <= 31
+        ? points.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="var(--accent)"/>`).join('')
+        : '';
+
+      return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Leads pulled per day">
+        <defs><linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+        </linearGradient></defs>
+        <g stroke="rgba(255,255,255,0.05)" stroke-dasharray="4 4">${gridlines}</g>
+        <text x="${padding}" y="${padding - 14}" fill="var(--text-3)" font-size="11" font-family="Inter, sans-serif">${maxCount} max</text>
+        ${area ? `<path d="${area}" fill="url(#chartGradient)" stroke="none"/>` : ''}
+        <path d="${line}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        ${dots}
+        ${tickIdx.map(i => `<text x="${points[i].x.toFixed(1)}" y="${height - 12}" fill="var(--text-3)" font-size="11" font-family="Inter, sans-serif" text-anchor="middle">${points[i].label}</text>`).join('')}
+        <line id="chart-rule" x1="0" y1="${padding}" x2="0" y2="${bottom}" stroke="var(--border-hi)" stroke-width="1" opacity="0"/>
+        <circle id="chart-dot" r="5" fill="var(--accent)" stroke="var(--bg)" stroke-width="2" opacity="0"/>
+        <rect id="chart-hit" x="0" y="0" width="${width}" height="${height}" fill="transparent"/>
+      </svg>`;
+    }
+
+    /* ============================================================
+       Drawer
+       ============================================================ */
+    function openDrawer(id){
+      const lead = state.leads.find(item => item.id === id);
+      if(!lead) return;
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'drawer-backdrop';
+      const drawer = document.createElement('div');
+      drawer.className = 'drawer';
+      drawer.setAttribute('role', 'dialog');
+      drawer.setAttribute('aria-label', 'Lead details');
+      drawer.innerHTML = `
+        <div class="drawer-header">
+          <div>
+            <h3 class="drawer-title">${escapeHtml(lead.first_name + ' ' + lead.last_name)}</h3>
+            <p class="drawer-phone">${lead.phone}</p>
+            <p class="drawer-status"><span class="status-dot" style="background:${statusMeta(lead.status).color}"></span>${statusMeta(lead.status).label}</p>
+          </div>
+          <button type="button" id="drawer-close" class="btn-secondary">Close</button>
+        </div>
+        <div class="action-grid">${STATUS.map(s => `
+          <button type="button" class="action-btn ${lead.status === s.key ? 'current' : ''}" data-status="${s.key}">${s.label}</button>`).join('')}
+        </div>
+        <div class="drawer-block">
+          <h4 class="section-title">The home</h4>
+          <div class="drawer-field"><strong>Address</strong><span>${escapeHtml(lead.address)}</span></div>
+          <div class="drawer-field"><strong>City</strong><span>${escapeHtml(lead.city)}</span></div>
+          <div class="drawer-field"><strong>Year built</strong><span>${lead.year_built}</span></div>
+          <div class="drawer-field"><strong>Size</strong><span>${lead.sqft.toLocaleString('en-US')} sqft</span></div>
+          <div class="drawer-field"><strong>Stories</strong><span>${lead.stories}</span></div>
+          <div class="drawer-field"><strong>Est. value</strong><span>${formatLeadValue(lead.est_value)}</span></div>
+          <div class="drawer-field"><strong>Solar panels</strong><span>${lead.has_solar ? 'Yes' : 'No'}</span></div>
+          <div class="drawer-field"><strong>Pulled</strong><span>${formatLongDate(lead.pulled_at)}</span></div>
+        </div>
+        <div class="drawer-block">
+          <h4 class="section-title">Notes</h4>
+          <textarea id="note-text" placeholder="Add a note about this lead…"></textarea>
+          <button type="button" id="save-note" class="btn-primary">Save note</button>
+          <div class="drawer-notes">${lead.notes.length ? lead.notes.map(note => `
+            <div class="note-item"><div class="note-date">${formatLongDate(note.created_at)}</div><div>${escapeHtml(note.body)}</div></div>`).join('')
+            : '<div class="empty-state">No notes yet.</div>'}
+          </div>
+        </div>`;
+
+      document.body.appendChild(backdrop);
+      document.body.appendChild(drawer);
+
+      function close(){
+        drawer.remove();
+        backdrop.remove();
+        document.removeEventListener('keydown', onKey);
+      }
+      function onKey(event){ if(event.key === 'Escape') close(); }
+      document.addEventListener('keydown', onKey);
+      backdrop.addEventListener('click', close);
+      drawer.querySelector('#drawer-close').addEventListener('click', close);
+
+      drawer.querySelectorAll('.action-btn').forEach(button => button.addEventListener('click', () => {
+        state.leads = state.leads.map(item => item.id === id ? {...item, status: button.dataset.status} : item);
+        close();
+        render();
+      }));
+      drawer.querySelector('#save-note').addEventListener('click', () => {
+        const text = drawer.querySelector('#note-text').value.trim();
+        if(!text) return;
+        lead.notes.unshift({id:'N' + Date.now(), body:text, created_at:new Date().toISOString()});
+        close();
+        render();
+      });
+    }
+
+    /* ============================================================
+       Sample data
+       ============================================================ */
+    function pick(list){ return list[Math.floor(Math.random() * list.length)]; }
+
+    function createSampleLeads(count, options){
+      options = options || {};
+      const firstNames = ['Sophie','Liam','Mia','Noah','Zoe','Ethan','Luna','Jackson','Isla','Aiden','Harper','Logan','Avery','Lucas','Evelyn','Mason','Chloe','Owen','Grace','Caleb'];
+      const lastNames  = ['Johnson','Miller','Brown','Davis','Wilson','Moore','Taylor','Anderson','Thomas','Martin','Jackson','White','Harris','Clark','Lewis','Nelson','Walker','Young'];
+      const streets    = ['Maple Ave','Cedar St','Walnut Dr','Aspen Rd','Pine Ln','Oak St','Birch Way','Willow Ct','Elm St','Cherry Blvd','Foothill Dr','Highland Dr'];
+      const cities     = ['Salt Lake City','Millcreek','South Jordan','West Valley City','Cottonwood Heights','Draper','Murray','Sandy'];
+      const leads = [];
+
+      for(let i = 0; i < count; i++){
+        /* Tag mix: ~15% both, ~35% two-story only, ~12% solar only, ~38% neither. */
+        const roll = Math.random();
+        let hasSolar, twoStory;
+        if(roll < 0.15){ hasSolar = true;  twoStory = true; }
+        else if(roll < 0.50){ hasSolar = false; twoStory = true; }
+        else if(roll < 0.62){ hasSolar = true;  twoStory = false; }
+        else { hasSolar = false; twoStory = false; }
+
+        /* pulled_at spread across the last 30 days, unless this is a fresh pull.
+           Capped at 29 days so the default "30 days" window covers the whole seed. */
+        const pulledAt = options.pulledAt
+          ? new Date(options.pulledAt)
+          : new Date(Date.now() - Math.floor(Math.random() * 29 * 24 * 60) * 60 * 1000);
+
+        leadSeq++;
+        leads.push({
+          id: 'L' + Date.now().toString(36) + leadSeq,
+          first_name: pick(firstNames),
+          last_name: pick(lastNames),
+          phone: `(801) ${Math.floor(200 + Math.random() * 800)}-${Math.floor(1000 + Math.random() * 9000)}`,
+          address: `${Math.floor(Math.random() * 9800) + 100} ${pick(streets)}`,
+          city: options.city && cities.includes(options.city) ? options.city : pick(cities),
+          status: options.status || weightedStatus(),
+          year_built: Math.floor(Math.random() * 60) + 1960,
+          stories: twoStory ? 2 : 1,
+          sqft: Math.floor(Math.random() * 1400) + 1200,
+          est_value: Math.floor(Math.random() * 420000) + 180000,
+          has_solar: hasSolar,
+          two_story: twoStory,
+          notes: [],
+          pulled_at: pulledAt.toISOString()
+        });
+      }
+      return leads;
+    }
+
+    function weightedStatus(){
+      const roll = Math.random();
+      let acc = 0;
+      for(let i = 0; i < STATUS.length; i++){
+        acc += STATUS_WEIGHTS[i];
+        if(roll < acc) return STATUS[i].key;
+      }
+      return STATUS[0].key;
+    }
+
+    /* ============================================================
+       Boot
+       ============================================================ */
+    window.addEventListener('hashchange', () => { state.page = getHash(); render(); });
+    render();
+  })();
+  </script>
+</body>
+</html>

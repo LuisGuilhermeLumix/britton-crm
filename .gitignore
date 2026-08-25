@@ -1,0 +1,18 @@
+node_modules/
+dist/
+dist-ssr/
+.env
+.env.local
+.env.*.local
+.DS_Store
+*.log
+npm-debug.log*
+.vite/
+.supabase/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+node_modules
+
+# Claude Code local overrides (machine-specific)
+.claude/settings.local.json
