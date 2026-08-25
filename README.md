@@ -176,7 +176,29 @@ Verify no secret leaked into the bundle before shipping:
 grep -ri "n8n\|service_role" dist/ || echo "clean"
 ```
 
-### Nginx on the VPS
+### Docker
+
+The image builds the site and serves it with Nginx. Because Vite inlines env vars at
+build time, the Supabase values are **build args**, not runtime env — passing them to
+`docker run` would be too late and the bundle would ship empty. The build fails fast if
+either is missing.
+
+```bash
+docker build \
+  --build-arg VITE_SUPABASE_URL="https://hbmocyetjsykqusvaevu.supabase.co" \
+  --build-arg VITE_SUPABASE_ANON_KEY="…" \
+  -t utah-leads-crm .
+
+docker run -d --name crm -p 80:80 utah-leads-crm
+```
+
+Rebuild the image whenever the anon key or project URL changes — they are baked in.
+
+The bundled `nginx.conf` serves `/index.html` for unknown paths, caches `/assets/`
+(content-hashed) for a year, and marks `index.html` `no-cache` so a redeploy isn't pinned
+to a stale build by the browser.
+
+### Nginx on the VPS (without Docker)
 
 ```bash
 git clone <your repo> /var/www/utah-leads
