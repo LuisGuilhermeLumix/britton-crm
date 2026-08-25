@@ -8,11 +8,20 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Checkbox } from '../components/Checkbox';
+import { TagFilters } from '../components/TagFilters';
 import { StatCard } from '../components/StatCard';
 import { StatCardSkeleton, Skeleton, TableSkeleton } from '../components/Skeleton';
 import { DATE_FILTERS, PRICE_PER_LEAD, stageMeta, type DateFilterKey } from '../lib/constants';
-import { applyFilters, dateRange, hasSolar, type CustomRange, type TagFilter } from '../lib/filters';
+import {
+  anyTagActive,
+  applyFilters,
+  dateRange,
+  hasSolar,
+  isDnc,
+  NO_TAGS,
+  type CustomRange,
+  type TagFilter,
+} from '../lib/filters';
 import { addDays, money, parseYMD, phoneDisplay, shortDate, tableDate, ymd } from '../lib/format';
 import type { LeadRow } from '../lib/types';
 import { useData } from '../providers/DataProvider';
@@ -78,7 +87,7 @@ export function Dashboard() {
     end: ymd(new Date()),
   });
   const [custom, setCustom] = useState<CustomRange>(draft);
-  const [tags, setTags] = useState<TagFilter>({ solar: false, twoStory: false });
+  const [tags, setTags] = useState<TagFilter>(NO_TAGS);
 
   const filtered = useMemo(
     () => applyFilters(leads, dateFilter, custom, tags),
@@ -96,9 +105,11 @@ export function Dashboard() {
   const bookingRate = total ? Math.round((appointments / total) * 100) : 0;
   const solarCount = filtered.filter(hasSolar).length;
   const solarPct = total ? Math.round((solarCount / total) * 100) : 0;
+  const dncCount = filtered.filter(isDnc).length;
+  const dncPct = total ? Math.round((dncCount / total) * 100) : 0;
   const recent = filtered.slice(0, 8);
 
-  const tagsActive = tags.solar || tags.twoStory;
+  const tagsActive = anyTagActive(tags);
   const showSkeletons = loadingLeads && !leadsLoaded;
   // Max 7 readable ticks, as in the demo.
   const tickInterval = Math.max(0, Math.ceil(trend.length / 7) - 1);
@@ -192,26 +203,11 @@ export function Dashboard() {
 
         <div className="filter-sep" />
 
-        <div className="filter-group">
-          <span className="group-label">Type</span>
-          <div className="pill-row">
-            <Checkbox
-              label="Solar"
-              checked={tags.solar}
-              onChange={(next) => setTags((current) => ({ ...current, solar: next }))}
-            />
-            <Checkbox
-              label="Two-story"
-              checked={tags.twoStory}
-              onChange={(next) => setTags((current) => ({ ...current, twoStory: next }))}
-            />
-          </div>
-          {tagsActive && !showSkeletons && (
-            <span className="text-small">
-              {total} of {leads.length} leads match
-            </span>
-          )}
-        </div>
+        <TagFilters
+          value={tags}
+          onChange={setTags}
+          hint={tagsActive && !showSkeletons ? `${total} of ${leads.length} leads match` : undefined}
+        />
       </section>
 
       <section className="stats-grid">
@@ -241,6 +237,10 @@ export function Dashboard() {
           <span className="value">
             {showSkeletons ? '—' : `${solarCount} (${solarPct}%)`}
           </span>
+        </div>
+        <div className="info-item">
+          <span className="label">On Do Not Call</span>
+          <span className="value">{showSkeletons ? '—' : `${dncCount} (${dncPct}%)`}</span>
         </div>
       </section>
 

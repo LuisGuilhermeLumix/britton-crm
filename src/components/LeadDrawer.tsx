@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Phone, PhoneOff } from 'lucide-react';
+import { AlertTriangle, Loader2, Phone, PhoneOff } from 'lucide-react';
 import type { LeadRow, Stage } from '../lib/types';
 import { BOARD_STAGES, DO_NOT_CALL, stageMeta } from '../lib/constants';
-import { hasSolar, isTwoStory } from '../lib/filters';
+import { hasSolar, isDeceased, isDnc, isLitigator, isTwoStory } from '../lib/filters';
 import { longDate, phoneDisplay, phoneHref, shortValue } from '../lib/format';
 import { useData } from '../providers/DataProvider';
 import { useToast } from '../providers/ToastProvider';
+import { OtherNumbers } from './OtherNumbers';
 
 interface Props {
   lead: LeadRow;
@@ -28,6 +29,13 @@ export function LeadDrawer({ lead, onClose }: Props) {
 
   const notes = Array.isArray(lead.notes) ? lead.notes : [];
   const meta = stageMeta(lead.stage);
+
+  // Litigator outranks DNC — if both are set, only the graver one is shown.
+  const warning = isLitigator(lead)
+    ? 'Known TCPA litigator. Calling this number carries legal risk.'
+    : isDnc(lead)
+      ? 'This number is on the federal Do Not Call list.'
+      : null;
 
   async function handleStage(stage: Stage) {
     if (busy || stage === lead.stage) return;
@@ -66,24 +74,36 @@ export function LeadDrawer({ lead, onClose }: Props) {
       <div className="drawer-backdrop" onClick={onClose} />
       <div className="drawer" role="dialog" aria-label="Lead details">
         <div className="drawer-header">
-          <div>
-            <h3 className="drawer-title">{lead.owner_name || 'Unknown owner'}</h3>
-            {lead.phone ? (
-              <a className="drawer-phone" href={phoneHref(lead.phone)}>
-                <Phone size={14} aria-hidden="true" />
-                {phoneDisplay(lead.phone)}
-              </a>
-            ) : (
-              <p className="drawer-phone">No phone on file</p>
-            )}
-            <p className="drawer-status">
-              <span className="status-dot" style={{ background: meta.color }} />
-              {meta.label}
-            </p>
-          </div>
+          <h3 className="drawer-title">{lead.owner_name || 'Unknown owner'}</h3>
           <button type="button" className="btn-secondary" onClick={onClose}>
             Close
           </button>
+        </div>
+
+        <div className="drawer-contact">
+          {warning && (
+            <div className="lead-warning" role="alert">
+              <AlertTriangle size={15} aria-hidden="true" />
+              <span>{warning}</span>
+            </div>
+          )}
+
+          {lead.phone ? (
+            <a className="drawer-phone" href={phoneHref(lead.phone)}>
+              <Phone size={14} aria-hidden="true" />
+              {phoneDisplay(lead.phone)}
+            </a>
+          ) : (
+            <p className="drawer-phone">No phone on file</p>
+          )}
+
+          <p className="drawer-status">
+            <span className="status-dot" style={{ background: meta.color }} />
+            {meta.label}
+            {isDeceased(lead) && <span className="tag tag-deceased">Deceased</span>}
+          </p>
+
+          <OtherNumbers phones={lead.extra_phones} />
         </div>
 
         <div className="action-grid">

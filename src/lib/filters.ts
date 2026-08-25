@@ -5,6 +5,14 @@ import { addDays, endOfDay, parseYMD, startOfDay } from './format';
 export interface TagFilter {
   solar: boolean;
   twoStory: boolean;
+  dnc: boolean;
+  litigator: boolean;
+}
+
+export const NO_TAGS: TagFilter = { solar: false, twoStory: false, dnc: false, litigator: false };
+
+export function anyTagActive(tags: TagFilter): boolean {
+  return tags.solar || tags.twoStory || tags.dnc || tags.litigator;
 }
 
 export interface CustomRange {
@@ -44,12 +52,26 @@ export function isTwoStory(lead: LeadRow): boolean {
   return lead.stories === 'two-story';
 }
 
+export function isDnc(lead: LeadRow): boolean {
+  return lead.phone_dnc === true;
+}
+
+export function isLitigator(lead: LeadRow): boolean {
+  return lead.is_litigator === true;
+}
+
+export function isDeceased(lead: LeadRow): boolean {
+  return lead.is_deceased === true;
+}
+
 /**
- * Neither box = everything. One box = that tag. Both boxes = AND, not OR.
+ * No box = everything. One box = that tag. Several boxes = AND, not OR.
  */
 export function matchesTags(lead: LeadRow, tags: TagFilter): boolean {
   if (tags.solar && !hasSolar(lead)) return false;
   if (tags.twoStory && !isTwoStory(lead)) return false;
+  if (tags.dnc && !isDnc(lead)) return false;
+  if (tags.litigator && !isLitigator(lead)) return false;
   return true;
 }
 

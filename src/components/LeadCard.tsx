@@ -1,7 +1,8 @@
 import type { DragEvent } from 'react';
 import type { LeadRow } from '../lib/types';
-import { hasSolar, isTwoStory } from '../lib/filters';
+import { isTwoStory } from '../lib/filters';
 import { phoneDisplay, shortDate, shortValue } from '../lib/format';
+import { LeadTags } from './LeadTags';
 
 interface Props {
   lead: LeadRow;
@@ -13,7 +14,6 @@ interface Props {
 }
 
 export function LeadCard({ lead, dragging, saving, onOpen, onDragStart, onDragEnd }: Props) {
-  const solar = hasSolar(lead);
   const twoStory = isTwoStory(lead);
   const fullAddress = [lead.address, lead.city].filter(Boolean).join(', ');
 
@@ -47,12 +47,7 @@ export function LeadCard({ lead, dragging, saving, onOpen, onDragStart, onDragEn
         <span>{twoStory ? '2 stories' : '1 story'}</span>
         {lead.market_value !== null && <span>{shortValue(lead.market_value)}</span>}
       </p>
-      {(solar || twoStory) && (
-        <div className="tag-row">
-          {solar && <span className="tag tag-solar">Solar</span>}
-          {twoStory && <span className="tag tag-story">2-story</span>}
-        </div>
-      )}
+      <LeadTags lead={lead} />
     </div>
   );
 }

@@ -112,6 +112,28 @@ never be visible to the client. Every dashboard number is computed from `ut_v_le
 `notes` is a jsonb **array**. Adding a note reads the current array, prepends
 `{ id, body, created_at }` and writes the whole array back — existing notes are preserved.
 
+### Compliance flags
+
+Leads whose phone is on the Do Not Call list are **delivered, not discarded** — the caller
+decides. `ut_v_leads` exposes three booleans that must stay visible:
+
+| Field | Shown as | Where |
+| --- | --- | --- |
+| `is_litigator` | `LITIGATOR` (solid red) | card tag + drawer warning banner |
+| `phone_dnc` | `DNC` (soft red) | card tag + drawer warning banner + Dashboard strip |
+| `is_deceased` | `Deceased` (grey) | card tag |
+
+Card tags are ordered `LITIGATOR → DNC → Deceased → Solar → 2-story`, so the legal risk
+always reads first. When a lead is both a litigator and on DNC, the drawer shows only the
+litigator warning — the graver of the two.
+
+`extra_phones` is a jsonb array of `{ phone, type, dnc, last_seen, score }`, listed in the
+drawer under "Other numbers", sorted by `score` descending. The section is omitted entirely
+when the array is empty.
+
+The queries use `select('*')`, so new view columns arrive without a query change — only
+`src/lib/types.ts` needs updating.
+
 ### Pricing
 
 The client price is always `leads × $0.40`, computed in the app. `ut_v_pulls.cost_usd` is

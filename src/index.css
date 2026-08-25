@@ -170,6 +170,12 @@ body { overflow-x: hidden; }
   color: var(--text-3); width: 44px; flex-shrink: 0;
 }
 .filter-sep { height: 1px; background: var(--border); }
+.filter-group .group-label.wide { width: auto; }
+/* Property vs Compliance are two labelled groups; every box is still an
+   independent AND filter. */
+.tag-filters { gap: 20px; }
+.tag-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.group-divider { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
 .custom-panel {
   display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding: 16px;
   border: 1px solid var(--border); border-radius: 12px; background: var(--surface-2);
@@ -206,7 +212,7 @@ body { overflow-x: hidden; }
 }
 .stats-card .help { margin: 8px 0 0; font-size: 13px; color: var(--text-3); line-height: 1.5; }
 .info-strip {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 16px 20px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 16px 20px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px; align-items: center;
 }
 .info-item { display: flex; flex-direction: column; gap: 4px; }
@@ -295,6 +301,13 @@ body { overflow-x: hidden; }
 }
 .tag-solar { background: rgba(245, 158, 11, .12); border-color: rgba(245, 158, 11, .24); color: #f0b451; }
 .tag-story { background: rgba(59, 130, 246, .12); border-color: rgba(59, 130, 246, .24); color: #7faef5; }
+/* Compliance tags. LITIGATOR is solid and bolder on purpose — it has to win
+   the card against Solar and 2-story. */
+.tag-litigator {
+  background: #ef4444; border-color: #ef4444; color: #fff; font-weight: 600; letter-spacing: .04em;
+}
+.tag-dnc { background: rgba(239, 68, 68, .2); border-color: rgba(239, 68, 68, .35); color: #fca5a5; font-weight: 600; }
+.tag-deceased { background: rgba(255, 255, 255, .04); border-color: var(--border); color: var(--text-3); }
 
 /* ---------- drawer ---------- */
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(11, 11, 15, .55); z-index: 40; }
@@ -305,6 +318,28 @@ body { overflow-x: hidden; }
 }
 .drawer-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .drawer-title { margin: 0; font-size: 18px; font-weight: 600; }
+.drawer-contact { display: flex; flex-direction: column; gap: 4px; margin-top: -8px; }
+
+/* Full-width warning, above the phone number — not a small tag. */
+.lead-warning {
+  display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;
+  background: rgba(239, 68, 68, .1); border: 1px solid rgba(239, 68, 68, .3);
+  border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.45; color: #fca5a5;
+}
+.lead-warning svg { flex-shrink: 0; margin-top: 1px; }
+
+.other-numbers { margin-top: 16px; }
+.phone-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.phone-list li {
+  font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; line-height: 1.5;
+}
+.phone-link {
+  font-family: var(--mono); color: var(--text-2); text-decoration: none;
+  font-variant-numeric: tabular-nums; transition: color .15s ease;
+}
+.phone-link:hover { color: var(--accent); }
+.phone-dnc { color: #fca5a5; font-weight: 600; }
 .drawer-phone {
   font-size: 16px; font-family: var(--mono); color: var(--text); margin: 8px 0 0;
   display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
@@ -389,6 +424,7 @@ body { overflow-x: hidden; }
 
 @media (max-width: 1120px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .info-strip { grid-template-columns: repeat(2, 1fr); }
   .main { padding: 24px; }
   .sidebar { padding: 24px 18px 18px; }
 }

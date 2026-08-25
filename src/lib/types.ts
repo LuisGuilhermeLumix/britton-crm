@@ -18,6 +18,15 @@ export interface LeadNote {
   created_at: string;
 }
 
+/** One entry in the ut_v_leads.extra_phones jsonb array. */
+export interface ExtraPhone {
+  phone: string;
+  type?: string | null;
+  dnc?: boolean | null;
+  last_seen?: string | null;
+  score?: number | null;
+}
+
 /** A row of the ut_v_leads view. */
 export interface LeadRow {
   id: string;
@@ -37,6 +46,12 @@ export interface LeadRow {
   stories: StoriesValue;
   solar: SolarValue;
   solar_permit_date: string | null;
+  /* Compliance flags. DNC leads are delivered now, not discarded — the
+     caller decides, so these have to be visible. */
+  phone_dnc: boolean | null;
+  is_litigator: boolean | null;
+  is_deceased: boolean | null;
+  extra_phones: ExtraPhone[] | null;
   stage: Stage;
   call_attempts: number | null;
   last_contacted_at: string | null;
