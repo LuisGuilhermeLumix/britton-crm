@@ -52,6 +52,7 @@ export interface LeadRow {
   is_litigator: boolean | null;
   is_deceased: boolean | null;
   extra_phones: ExtraPhone[] | null;
+  extra_emails: string[] | null;
   stage: Stage;
   call_attempts: number | null;
   last_contacted_at: string | null;

@@ -22,12 +22,12 @@ export function OtherNumbers({ phones }: { phones: ExtraPhone[] | null }) {
       <p className="label-sm" style={{ marginBottom: 8 }}>
         Other numbers
       </p>
-      <ul className="phone-list">
+      <ul className="contact-list">
         {[...list].sort(byScore).map((entry, index) => {
           const parts = [entry.type, year(entry.last_seen)].filter(Boolean);
           return (
             <li key={`${entry.phone}-${index}`}>
-              <a className="phone-link" href={phoneHref(entry.phone)}>
+              <a className="contact-link" href={phoneHref(entry.phone)}>
                 {phoneDisplay(entry.phone)}
               </a>
               {parts.map((part) => (

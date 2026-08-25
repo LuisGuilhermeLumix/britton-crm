@@ -329,16 +329,20 @@ body { overflow-x: hidden; }
 .lead-warning svg { flex-shrink: 0; margin-top: 1px; }
 
 .other-numbers { margin-top: 16px; }
-.phone-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.phone-list li {
+.contact-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.contact-list li {
   font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; line-height: 1.5;
 }
-.phone-link {
-  font-family: var(--mono); color: var(--text-2); text-decoration: none;
+.contact-link {
+  font-family: var(--mono); font-size: 12px; color: var(--text-2); text-decoration: none;
   font-variant-numeric: tabular-nums; transition: color .15s ease;
 }
-.phone-link:hover { color: var(--accent); }
+.contact-link:hover { color: var(--accent); }
+.email-primary {
+  display: block; font-size: 13px; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .phone-dnc { color: #fca5a5; font-weight: 600; }
 .drawer-phone {
   font-size: 16px; font-family: var(--mono); color: var(--text); margin: 8px 0 0;

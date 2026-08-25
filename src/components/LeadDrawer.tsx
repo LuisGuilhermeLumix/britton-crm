@@ -7,6 +7,7 @@ import { longDate, phoneDisplay, phoneHref, shortValue } from '../lib/format';
 import { useData } from '../providers/DataProvider';
 import { useToast } from '../providers/ToastProvider';
 import { OtherNumbers } from './OtherNumbers';
+import { ContactEmails } from './ContactEmails';
 
 interface Props {
   lead: LeadRow;
@@ -104,6 +105,7 @@ export function LeadDrawer({ lead, onClose }: Props) {
           </p>
 
           <OtherNumbers phones={lead.extra_phones} />
+          <ContactEmails email={lead.email} extras={lead.extra_emails} />
         </div>
 
         <div className="action-grid">
