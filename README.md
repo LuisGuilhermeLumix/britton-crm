@@ -248,8 +248,16 @@ files immediately — no restart required.
 
 ## Branding
 
-The sidebar and login screen load `public/logo-lumix.png`. Drop the Lumix PNG there; if the
-file is missing the app falls back to a plain "Lumix" wordmark rather than a broken image.
+The sidebar and login screen load `public/logo-lumix.png` through the `Brand` component; if
+the file fails to load the app falls back to a plain "Lumix" wordmark rather than a broken image.
+
+The browser tab uses `public/favicon.png`, a 64×64 transparent square with the logo centred at
+85% — the raw logo is wide and would be squashed into the tab's square slot. It is a committed
+static asset, not generated at build time. Regenerate it whenever the logo changes:
+
+```bash
+npm run favicon   # scripts/make-favicon.mjs, uses sharp
+```
 
 ## Project layout
 
