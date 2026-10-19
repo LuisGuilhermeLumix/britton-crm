@@ -24,7 +24,7 @@ export function Sidebar({ page, onNavigate }: Props) {
 
   return (
     <aside className="sidebar">
-      <Brand />
+      <Brand height={26} />
       <nav className="nav">
         {PAGES.map((item) => (
           <button

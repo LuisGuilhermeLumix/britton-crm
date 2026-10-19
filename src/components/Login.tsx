@@ -28,7 +28,7 @@ export function Login() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={handleSubmit}>
-        <Brand height={32} />
+        <Brand height={34} />
 
         <div className="login-field">
           <label htmlFor="email">Email</label>

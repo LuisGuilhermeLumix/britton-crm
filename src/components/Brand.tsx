@@ -1,10 +1,12 @@
 import { useState } from 'react';
 
 /**
- * The Lumix mark, served from public/logo-lumix.png so a missing file never
- * breaks the build. Falls back to a wordmark if the PNG isn't there yet.
+ * The one place the Lumix mark is rendered — sidebar and login both use it,
+ * only at different heights. Served from public/logo-lumix.png (also the
+ * favicon). If the image ever fails to load, a plain wordmark shows instead
+ * of a broken-image glyph.
  */
-export function Brand({ height = 30 }: { height?: number }) {
+export function Brand({ height }: { height: number }) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {

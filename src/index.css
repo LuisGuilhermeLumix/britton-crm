@@ -53,7 +53,7 @@ body { overflow-x: hidden; }
   display: flex; flex-direction: column; gap: 32px; z-index: 10;
 }
 .brand { display: flex; align-items: center; min-height: 32px; }
-.brand img { height: 30px; width: auto; max-width: 100%; display: block; }
+.brand img { width: auto; max-width: 100%; display: block; } /* height comes from the Brand prop */
 .nav { display: flex; flex-direction: column; gap: 8px; }
 .nav button {
   display: flex; align-items: center; gap: 12px; padding: 12px 14px;
@@ -461,7 +461,6 @@ body { overflow-x: hidden; }
   .info-strip { grid-template-columns: 1fr; }
   .drawer { width: 100%; }
   .filter-group .group-label { width: 100%; }
-  .brand img { height: 26px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
