@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 
-type ToastKind = 'success' | 'error';
+type ToastKind = 'success' | 'error' | 'warning';
 
 interface Toast {
   id: number;
@@ -11,6 +11,8 @@ interface Toast {
 interface ToastApi {
   success: (message: string) => void;
   error: (message: string) => void;
+  /** Amber: something to know about, not a failure — e.g. a partial delivery. */
+  warning: (message: string) => void;
 }
 
 const ToastContext = createContext<ToastApi | null>(null);
@@ -22,16 +24,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const push = useCallback((kind: ToastKind, message: string) => {
     const id = ++seq.current;
     setToasts((current) => [...current, { id, kind, message }]);
-    // Errors linger a little longer — they usually need reading.
+    // Errors and warnings linger longer — they usually need reading.
     window.setTimeout(() => {
       setToasts((current) => current.filter((toast) => toast.id !== id));
-    }, kind === 'error' ? 7000 : 4200);
+    }, kind === 'success' ? 4200 : 8000);
   }, []);
 
   const api = useMemo<ToastApi>(
     () => ({
       success: (message: string) => push('success', message),
       error: (message: string) => push('error', message),
+      warning: (message: string) => push('warning', message),
     }),
     [push],
   );

@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Checkbox } from '../components/Checkbox';
 import { Skeleton } from '../components/Skeleton';
 import { PRICE_PER_LEAD, QTY_STEP, QUICK_QTY } from '../lib/constants';
 import { longDate, money, timeOfDay } from '../lib/format';
-import { getInFlightPull, setInFlightPull, startPull, waitForPull } from '../lib/pull';
+import {
+  estimateRemainingMs,
+  formatRemaining,
+  getInFlightPull,
+  pollPullProgress,
+  pushReading,
+  setInFlightPull,
+  startPull,
+  type PullProgress,
+  type Reading,
+} from '../lib/pull';
 import { errorMessage } from '../lib/supabase';
 import { useData } from '../providers/DataProvider';
 import { useToast } from '../providers/ToastProvider';
@@ -15,53 +26,95 @@ const PHASES = [
   'Saving to your pipeline…',
 ];
 
+/** The caption follows real progress rather than a timer. */
+function phaseFor(pct: number): number {
+  if (pct <= 0) return 0;
+  if (pct < 60) return 1;
+  if (pct < 100) return 2;
+  return 3;
+}
+
 type Status = 'idle' | 'running' | 'failed';
+
+interface LiveProgress {
+  target: number;
+  delivered: number;
+  pct: number;
+  /** A batch is in flight and the number hasn't moved — show the sheen. */
+  working: boolean;
+  remaining: string;
+}
 
 export function PullLeads() {
   const { pulls, loadingPulls, refreshAll, refreshPulls } = useData();
   const toast = useToast();
 
   const [qty, setQty] = useState<number | null>(50);
+  const [solarOnly, setSolarOnly] = useState(false);
+  const [twoStoryOnly, setTwoStoryOnly] = useState(false);
+
   const [status, setStatus] = useState<Status>('idle');
-  const [phase, setPhase] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [live, setLive] = useState<LiveProgress | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
   const resumed = useRef(false);
+  const history = useRef<Reading[]>([]);
+  const lastPct = useRef(0);
 
   const count = qty ?? 0;
   const cost = count * PRICE_PER_LEAD;
 
-  /** Walks the phase captions while we wait on n8n. */
-  useEffect(() => {
-    if (status !== 'running') return;
-    const timer = window.setInterval(() => {
-      setPhase((current) => Math.min(PHASES.length - 1, current + 1));
-      // Creeps toward 90% — the last jump happens when the pull actually lands.
-      setProgress((current) => Math.min(90, current + 22));
-    }, 2200);
-    return () => window.clearInterval(timer);
-  }, [status]);
+  /** Folds one RPC reading into what the bar shows. */
+  const onProgress = useCallback((target: number, progress: PullProgress) => {
+    const now = Date.now();
+    const pct = Math.min(100, Math.round((progress.delivered / Math.max(1, target)) * 100));
+    history.current = pushReading(history.current, { t: now, delivered: progress.delivered });
+    const working = progress.processing > 0 && pct === lastPct.current;
+    lastPct.current = pct;
+    setLive({
+      target,
+      delivered: progress.delivered,
+      pct,
+      working,
+      remaining: formatRemaining(estimateRemainingMs(history.current, target, now)),
+    });
+  }, []);
 
   /** Waits for a pull that has already been handed to n8n. */
   const awaitPull = useCallback(
-    async (pullId: string, requested: number) => {
-      setInFlightPull({ pullId, count: requested });
+    async (pullId: string, target: number) => {
+      setInFlightPull({ pullId, count: target });
+      history.current = [];
+      lastPct.current = 0;
+      setLive({ target, delivered: 0, pct: 0, working: true, remaining: 'estimating…' });
+
       try {
-        const row = await waitForPull(pullId);
-        setProgress(100);
-        // Price the client sees is always leads × PRICE_PER_LEAD, never the
-        // view's cost_usd.
-        toast.success(`${row.leads} leads pulled · ${money(row.leads * PRICE_PER_LEAD)}`);
+        const final = await pollPullProgress(pullId, target, (progress) => onProgress(target, progress));
+        const delivered = final.delivered;
+        // Price the client sees is always leads × PRICE_PER_LEAD — never the
+        // RPC's cost_cents, which is the supplier cost.
+        const price = money(delivered * PRICE_PER_LEAD);
+
+        setLive((current) => (current ? { ...current, pct: 100, working: false, remaining: '' } : current));
+
+        if (delivered >= target) {
+          toast.success(`${delivered} leads pulled · ${price}`);
+        } else {
+          // Partial is not a failure: the stock for this filter ran out.
+          toast.warning(
+            `${delivered} of ${target} leads pulled · ${price} — not enough addresses available for this filter.`,
+          );
+        }
 
         // Refresh Recent pulls and invalidate the leads cache the other pages read.
         await refreshAll();
         setStatus('idle');
-        setProgress(0);
+        setLive(null);
       } catch (error) {
         const message = errorMessage(error, 'The pull could not be completed.');
         setFailure(message);
         setStatus('failed');
+        setLive(null);
         toast.error(message);
         // The pull may have partially landed; make sure history is current.
         void refreshPulls();
@@ -69,7 +122,7 @@ export function PullLeads() {
         setInFlightPull(null);
       }
     },
-    [refreshAll, refreshPulls, toast],
+    [onProgress, refreshAll, refreshPulls, toast],
   );
 
   /** Reattach to a pull that was still running when we navigated away. */
@@ -80,7 +133,6 @@ export function PullLeads() {
     if (!active) return;
     setQty(active.count);
     setStatus('running');
-    setProgress(40);
     void awaitPull(active.pullId, active.count);
   }, [awaitPull]);
 
@@ -89,14 +141,14 @@ export function PullLeads() {
 
     setStatus('running');
     setFailure(null);
-    setPhase(0);
-    setProgress(8);
 
     let response;
     try {
-      // Pulls are always random now. The fields stay in the payload so the
-      // n8n side keeps working unchanged if filters ever come back.
-      response = await startPull({ count, solar: null, stories: null });
+      response = await startPull({
+        count,
+        solar: solarOnly ? 'solar' : null,
+        stories: twoStoryOnly ? 'two-story' : null,
+      });
     } catch (error) {
       const message = errorMessage(error, 'The pull could not be started.');
       setFailure(message);
@@ -113,6 +165,7 @@ export function PullLeads() {
   }
 
   const running = status === 'running';
+  const bothFilters = solarOnly && twoStoryOnly;
 
   return (
     <>
@@ -122,8 +175,7 @@ export function PullLeads() {
       </section>
 
       <section className="card" style={{ maxWidth: 720, marginInline: 'auto', width: '100%' }}>
-        {/* Last block before the divider — its margin would double up. */}
-        <div className="field-group" style={{ marginBottom: 0 }}>
+        <div className="field-group">
           <p className="label-sm">Quantity</p>
           <div className="field-inline">
             <div className="stepper">
@@ -179,6 +231,19 @@ export function PullLeads() {
           <p className="text-small">Type any amount, or pick a shortcut.</p>
         </div>
 
+        {/* Last block before the divider — its margin would double up. */}
+        <div className="field-group" style={{ marginBottom: 0 }}>
+          <p className="label-sm">Filters</p>
+          <div className="pill-row">
+            <Checkbox label="Solar only" checked={solarOnly} onChange={setSolarOnly} />
+            <Checkbox label="Two-story only" checked={twoStoryOnly} onChange={setTwoStoryOnly} />
+          </div>
+          <p className="text-small">Leave both off to pull from every home in the territory.</p>
+          {bothFilters && (
+            <p className="note-amber">Fewer homes match both filters — a large pull may come back short.</p>
+          )}
+        </div>
+
         <div className="divider" />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -204,14 +269,24 @@ export function PullLeads() {
           </p>
         </div>
 
-        {running && (
+        {running && live && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24 }}>
-            <p className="text-small">{PHASES[phase]}</p>
-            <div className="progress-track">
-              <div className="progress-fill" style={{ width: `${progress}%` }} />
+            <p className="text-small">{PHASES[phaseFor(live.pct)]}</p>
+            <div className="progress-row">
+              <div
+                className="progress-track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={live.pct}
+              >
+                <div className={`progress-fill${live.working ? ' working' : ''}`} style={{ width: `${live.pct}%` }} />
+              </div>
+              <span className="progress-pct">{live.pct}%</span>
             </div>
-            <p className="text-small" style={{ textAlign: 'right' }}>
-              {count} leads requested
+            <p className="text-small">
+              {live.delivered} of {live.target} leads
+              {live.remaining ? ` · ${live.remaining}` : ''}
             </p>
           </div>
         )}

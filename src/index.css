@@ -139,6 +139,7 @@ body { overflow-x: hidden; }
   color: var(--text); font-variant-numeric: tabular-nums;
 }
 .text-small { font-size: 12px; line-height: 1.4; color: var(--text-3); }
+.note-amber { font-size: 12px; line-height: 1.4; color: #f0b451; }
 
 /* ---------- checkbox filters ---------- */
 .check {
@@ -389,6 +390,7 @@ body { overflow-x: hidden; }
 }
 .toast-success { background: #142316; border: 1px solid rgba(34, 197, 94, .28); color: #d4f9da; }
 .toast-error { background: #2a1416; border: 1px solid rgba(239, 68, 68, .3); color: #ffd7d7; }
+.toast-warning { background: #2a2010; border: 1px solid rgba(245, 158, 11, .35); color: #fde7b8; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* ---------- skeletons ---------- */
@@ -421,7 +423,25 @@ body { overflow-x: hidden; }
 
 /* ---------- progress ---------- */
 .progress-track { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .08); overflow: hidden; }
-.progress-fill { height: 100%; background: var(--accent); transition: width .3s ease; }
+/* Width eases to each new value so a 100-lead batch landing reads as a glide,
+   not a jump. The .working sheen runs while a batch is in flight and the number
+   is flat, so the screen never looks frozen between batches. */
+.progress-fill {
+  position: relative; overflow: hidden; height: 100%; background: var(--accent);
+  transition: width .6s cubic-bezier(.22, .61, .36, 1);
+}
+.progress-fill.working::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, .28) 50%, transparent 100%);
+  animation: progress-sheen 1.6s ease-in-out infinite;
+}
+@keyframes progress-sheen { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.progress-row { display: flex; align-items: center; gap: 12px; }
+.progress-row .progress-track { flex: 1; }
+.progress-pct {
+  font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text-2);
+  font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 36px; text-align: right;
+}
 
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

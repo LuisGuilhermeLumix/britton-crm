@@ -101,9 +101,14 @@ Authorization: Bearer <user jwt>       # required, 401 without a valid session
 → 200 { "ok": true, "pull_id": "…", "requested": 50 }
 ```
 
-`count` must be a whole number between 1 and 2000. After the call returns, the front end
-polls `ut_v_pulls` every 2s (5-minute timeout) until the row for that `pull_id` appears
-with `leads > 0`.
+`count` must be a whole number between 1 and 2000. After the call returns, the front end polls the `ut_pull_progress(p_pull_id)` RPC every 2s and
+drives a real progress bar from it (`delivered / requested`, with a pace-based time estimate).
+The pull is considered finished after two consecutive readings with `running = false`, once
+activity has been seen or a 10s startup grace has passed — `running` is simply "any row
+currently claimed", so it dips to false between batches. A 5-minute stall timeout is the
+safety net; it restarts whenever `delivered` or `processing` moves. The RPC also returns
+`cost_cents` (supplier cost); the client strips it and never renders it. A delivery short
+of the requested count ends with an amber warning, not an error.
 
 ---
 
